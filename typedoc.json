@@ -1,0 +1,12 @@
+{
+  "entryPoints": ["src"],
+  "tsconfig": "tsconfig.es6.json",
+  "includeVersion": true,
+  "excludeExternals": true,
+  "excludePrivate": false,
+  "excludeTags": "license",
+  "exclude": "**/*+(index|test|lib|d).ts",
+  "name": "jianpurender",
+  "readme": "./README.md",
+  "out": "docs"
+}
