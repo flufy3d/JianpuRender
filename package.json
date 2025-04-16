@@ -1,6 +1,6 @@
 {
   "name": "jianpurender",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Render music score using SVG on browsers.",
   "main": "node/index.js",
   "module": "es6/index.js",
@@ -40,6 +40,8 @@
     "build": "npm run build:clean && npm run build:es5 && npm run build:node && npm run build:es6",
     "lint": "eslint src/**/*.ts",
     "test": "ts-node node_modules/tape/bin/tape test/**/*_test.ts",
+    "demo:serve": "webpack-dev-server --config webpack/es5.demo.config.ts --mode development",
+    "demo:build": "webpack --config webpack/es5.demo.config.ts --mode production",
     "docs:build": "typedoc --options typedoc.json",
     "docs:serve": "http-server docs/",
     "docs:clean": "rimraf ./docs/*",
