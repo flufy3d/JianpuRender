@@ -27,4 +27,18 @@ This is a **work in process** project, who has some to do list, like triplets, q
 - Run `yarn prepublish` to verify new version standard before any contribution
 - Admin only:
   - Update version
-  - Run `npm publish` 
+  - Run `npm publish`
+
+## 简谱开发路线
+- [ ] 1. 实现基本数字符号渲染（1-7）
+- [ ] 2. 添加高低音点符号（数字上下方点）
+- [ ] 3. 绘制增时线（音符右侧短横线） 
+- [ ] 4. 实现减时线（数字下方单横线）
+- [ ] 5. 添加小节线渲染
+- [ ] 6. 支持连音线（延音线和圆滑线）
+- [ ] 7. 实现调号标记（1=XX格式）
+- [ ] 8. 添加临时升降记号（#/b符号）
+- [ ] 9. 添加拍号显示（如4/4拍）
+- [ ] 10. 添加反复记号（D.C.等）
+- [ ] 11. 实现装饰音标记
+- [ ] 12. 支持多声部纵向排列
