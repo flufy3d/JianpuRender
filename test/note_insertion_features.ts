@@ -23,8 +23,6 @@ import { TestData } from './test_data';
 
 export const testData: TestData[] = [];
 
-var position = 0; // Used for incremental note starting point
-
 testData[0] = {
   title: `Notes ordered by length in same block.`,
   description: `Notes will be ordered by length in same block.`,
