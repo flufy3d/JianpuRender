@@ -16,177 +16,32 @@
  */
 
 /**
- * All SVG paths have been drawn in a scale of `PATH_SCALE * PATH_SCALE`
- * in a relative position to the staff middle line, anchoring to the
- * leftmost side of a note head.
+ * Base scale for path definitions. Most coordinates are relative to a 100x100 box.
+ * Actual rendering size is determined by config.noteHeight.
  */
-export const PATH_SCALE = 100; 
+export const PATH_SCALE = 100;
 
+// --- Accidentals ---
+// Using simpler text symbols is often easier for Jianpu accidentals.
+// If paths are preferred, keep these:
+const sharpPath = `m 30,15 h 40 m -35,20 h 40 M 50,0 v 50 M 70,5 v 50`; // Simple sharp #
+const flatPath = `m 45,5 v 40 c 0,15 20,15 20,0 V 20 C 65,5 45,5 45,5 Z`;    // Simple flat b
+const naturalPath = `M 45,5 v 45 M 65,0 v 45 H 45 m 20,10 H 45`; // Simple natural ♮
 
-/** Test SVG path */
-export const MyPath = `M 139,48 C 102,57 76,120 131,151 41,128 64,24 129,2 L 
-117,-57 C -32,47 26,217 166,182 Z m 12,-1 27,131 C 242,153 216,46 151,47 
-Z m -35,-177 c 34,-23 82,-117 50,-140 -23,-17 -71,33 -50,140 z m -10,10 c 
--23,-77 -20,-200 48,-213 19,-4 89,171 -26,266 l 13,66 c 120,-6 137,155 
-39,191 l 12,58 c 30,131 -137,145 -138,47 0,-29 37,-59 63,-37 21,18 25,71 
--25,70 32,42 103,0 91,-65 L 167,193 C 56,232 -112,63 106,-120 Z`;
+/** Accidental paths indexed by numeric identifier (0=none, 1=#, 2=b, 3=♮) */
+// Using null for 0, and potentially text symbols instead of paths.
+export const ACCIDENTAL_PATHS = [null, sharpPath, flatPath, naturalPath];
+/** Accidental text symbols */
+export const ACCIDENTAL_TEXT = ['', '#', 'b', '♮'];
 
-
-/** G clef SVG path */
-const gClefPath = `M 139,48 C 102,57 76,120 131,151 41,128 64,24 129,2 L 
-117,-57 C -32,47 26,217 166,182 Z m 12,-1 27,131 C 242,153 216,46 151,47 
-Z m -35,-177 c 34,-23 82,-117 50,-140 -23,-17 -71,33 -50,140 z m -10,10 c 
--23,-77 -20,-200 48,-213 19,-4 89,171 -26,266 l 13,66 c 120,-6 137,155 
-39,191 l 12,58 c 30,131 -137,145 -138,47 0,-29 37,-59 63,-37 21,18 25,71 
--25,70 32,42 103,0 91,-65 L 167,193 C 56,232 -112,63 106,-120 Z`;
-/** F clef SVG path */
-const fClefPath = `m 101,-199 c -49,0 -100,28 -100,83 0,39 58,57 82,26 15,-20 
--4,-47 -32,-47 -23,1 -25,0 -25,-8 0,-22 40,-46 71,-41 91,16 67,208 -105,302 
-75,-27 198,-94 211,-201 6,-66 -42,-114 -102,-114 z m 143,33 c -13,0 -23,11 
--23,24 0,14 10,24 23,24 13,0 23,-11 23,-24 0,-13 -10,-24 -23,-24 z m 2,83 c 
--13,0 -23,11 -23,24 0,14 10,24 23,24 13,0 23,-11 23,-24 0,-13 -10,-24 -23,-24 
-z`;
-
-/** Whole note head SVG path */
-const wholeHeadPath = `m 0,0 c 0,-37 49,-51 79,-51 31,0 83,13 83,51 0,39 
--55,51 -84,51 C 49,51 0,37 0,0 Z m 111,31 c 13,-19 0,-58 -22,-68 -33,-15 
--53,10 -39,49 9,27 48,39 61,19 z`;
-/** Half note head SVG path */
-const halfHeadPath = `m 0,10 c 0,-25 35,-60 80,-60 15,0 45,4 45,40 C 125,16 
-89,50 45,50 17,50 0,36 0,10 Z m 71,7 c 17,-11 45,-34 38,-45 -7,-10 -39,1 
--57,12 -19,11 -42,31 -36,42 6,10 37,2 55,-9 z`;
-/** Quarter note head (and shorter) SVG path */
-const quarterHeadPath = `M 0,10 C 0,-15 35,-50 80,-50 110,-50 125,-35 125,-10 
-125,15 90,50 45,50 15,50 0,35 0,10 Z`;
-
-/** Sharp accidental SVG path */
-const sharpPath = `m -49,-121 v 52 l -29,9 v -48 h -8 v 51 l -20,6 v 29 l 
-20,-6 v 70 l -20,6 v 30 l 20,-6 v 51 h 8 V 69 l 30,-8 v 50 h 8 V 58 l 20,-6 
-V 23 l -20,6 v -71 l 20,-6 v -29 l -20,6 v -50 z m 1,82 v 71 l -29,9 v -71 z`;
-/** Flat accidental SVG path */
-const flatPath = `M -106,-166 V 67 c 52,-42 85,-56 85,-94 0,-47 -46,-51 
--73,-22 v -117 z m 31,120 c 20,0 42,46 -20,91 V -7 c 0,-28 10,-39 20,-39 z`;
-/** NNormal accidental SVG path */
-const normalPath = `m -81,-58 v -48 H -92 V 73 l 60,-13 v 50 h 11 V -72 Z m 
-50,24 v 58 l -50,11 v -58 z`;
-
-/** Whole note rest SVG path */
-const wholeRestPath = 'm 0,-50 h 125 v -50 H 0 Z';
-/** Half note rest SVG path */
-const halfRestPath = 'M 0,0 H 125 V -50 H 0 Z';
-/** Quarter note rest SVG path */
-const quarterRestPath = `m 0,-25 c 39,-39 37,-75 8,-120 l 6,-5 61,103 C 
-40,-13 31,4 73,71 l -5,5 C 14,52 16,125 67,144 l -4,6 C -37,102 -1,22 59,60 Z`;
-/** Eigth note rest SVG path */
-const eigthRestPath = `m 52,-47 c 26,-2 42,-21 48,-42 l 12,4 L 64,83 52,79 
-88,-49 c 0,0 -17,22 -57,22 -16,0 -31,-13 -31,-27 0,-18 10,-31 27,-31 17,0 
-33,15 25,38 z`;
-/** Sixteenth note rest SVG path */
-const sixteenthRestPath = `m 129,-191 c -6,21 -22,40 -48,42 8,-23 -8,-38 
--25,-38 -17,0 -27,13 -27,31 0,14 15,27 31,27 40,0 57,-22 57,-22 l -20,69 
-c -7,18 -22,33 -45,35 8,-23 -8,-38 -25,-38 -17,0 -27,13 -27,31 0,14 15,27 
-31,27 40,0 57,-22 57,-22 l -36,128 12,4 77,-270 z`;
-/** Thirty-secondth note rest SVG path */
-const thirtySecondRestPath = `m 129,-191 c -6,21 -22,40 -48,42 8,-23 -8,-38 
--25,-38 -17,0 -27,13 -27,31 0,14 15,27 31,27 40,0 57,-22 57,-22 l -20,69 
-c -7,18 -22,33 -45,35 8,-23 -8,-38 -25,-38 -17,0 -27,13 -27,31 0,14 15,27 
-31,27 40,0 57,-22 57,-22 L 68,20 C 61,37 46,51 24,52 32,29 16,14 -1,14 c 
--17,0 -27,13 -27,31 0,14 15,27 31,27 38,0 55,-20 57,-22 l -36,128 12,4 
-105,-369 z`;
-/** Sixty-fouurth note rest SVG path */
-const sixtyFourthRestPath = `m 158,-292 c -6,21 -22,40 -48,42 8,-23 -8,-38 
--25,-38 -17,0 -27,13 -27,31 0,14 15,27 31,27 40,0 57,-22 57,-22 l -17,61 
-v 0 c -6,21 -22,40 -48,42 8,-23 -8,-38 -25,-38 -17,0 -27,13 -27,31 0,14 
-15,27 31,27 40,0 57,-22 57,-22 l -20,69 c -7,18 -22,33 -45,35 8,-23 -8,-38 
--25,-38 -17,0 -27,13 -27,31 0,14 15,27 31,27 40,0 57,-22 57,-22 L 68,20 C 
-61,37 46,51 24,52 32,29 16,14 -1,14 c -17,0 -27,13 -27,31 0,14 15,27 31,27 
-38,0 55,-20 57,-22 l -36,128 12,4 134,-469 z`;
-
-/** Staff line SVG path */
-export const staffLinePath = 'm 0,0 h 100';
-/** Extra line (over or under staff) SVG path */
-export const extraLinePath = 'm -25,0 h 175';
-/** Bar line SVG path */
-export const barPath = 'm 0,-200 v 400';
-/** Note stem SVG path */
-export const stemPath = 'm 0,0 v 100 h 15 v -100 z';
-/** Note flag for single instance (1/8th notes) SVG path */
-export const singleFlagPath = `M0,0 h 12 c 7,100 175,156 62,314 79,-177 -49,
--193 -61,-200 l -13,-5 z`;
-/** Note flag for multiple instance (1/16th notes and shorter) SVG path */
-export const multiFlagPath = `m 0,0 h 10 c 6,72 173,64 84,227 44,-120 -44,
--123 -94,-167 z`;
-/** Note tie SVG path */
-export const tiePath = `M 0,25 C 10,46 30,67 50,67 69,67 90,47 100,25 94,
-65 73,89 50,89 26,89 5,63 0,25 Z`;
-/** Note dot SVG path */
-export const dotPath = 'M 5 -20 a 20 20 0 1 0 0.00001 0 z';
-
-/**
- * A structure to hold all details to compose a note combining SVG path 
- * details and their cuantities (position, number of flags...)
- */
-interface NotePathDetails {
-  /** Note head SVG path */
-  path: string;
-  /** Note head width scale (over `PATH_SCALE` proportions) */ 
-  width: number;
-  /** Note stem lenght measured in vertical staff steps (2 per staff line) */
-  stemVSteps: number;
-  /** Vertical position of note stem start (over `PATH_SCALE` proportions) */
-  stemAnchor: number;
-  /** Number of note flags */
-  flags: number;
-}
-
-/** Note path details indexed by number of note quarters */
-export const NOTE_PATHS: {[index: number]: NotePathDetails} = {
-  4: {
-    path: wholeHeadPath, width: 150, stemVSteps: 0, stemAnchor: 0, 
-    flags: 0
-  },
-  2: {
-    path: halfHeadPath, width: 125, stemVSteps: 7, stemAnchor: -10, 
-    flags: 0
-  },
-  1: {
-    path: quarterHeadPath, width: 125, stemVSteps: 7, stemAnchor: -10, 
-    flags: 0
-  },
-  0.5: {
-    path: quarterHeadPath, width: 125, stemVSteps: 7, stemAnchor: -10, 
-    flags: 1
-  },
-  0.25: {
-    path: quarterHeadPath, width: 125, stemVSteps: 9, stemAnchor: -10, 
-    flags: 2
-  },
-  0.125: {
-    path: quarterHeadPath, width: 125, stemVSteps: 11, stemAnchor: -10, 
-    flags: 3
-  },
-  0.0625: {
-    path: quarterHeadPath, width: 125, stemVSteps: 13, stemAnchor: -10, 
-    flags: 4
-  }
-};
-
-/** Note rest paths indexed by number of note quarters */
-export const REST_PATHS: {[index: number]: string} = {
-  4: wholeRestPath,
-  2: halfRestPath,
-  1: quarterRestPath,
-  0.5: eigthRestPath,
-  0.25: sixteenthRestPath,
-  0.125: thirtySecondRestPath,
-  0.0625: sixtyFourthRestPath
-};
-
-/** Clef paths indexed by equivalent MIDI note (staff vertical position) */
-export const CLEF_PATHS: {[index: number]: string} = {
-  50: fClefPath,
-  71: gClefPath
-};
-
-/** Accidental paths indexed by numeric identifier */
-export const ACCIDENTAL_PATHS = [null, sharpPath, flatPath, normalPath];
+// --- Lines and Dots ---
+/** Bar line (simple vertical line) */
+export const barPath = 'm 0,-50 v 100'; // Centered vertically around y=0, height 100
+/** Underline for duration (simple horizontal line) */
+export const underlinePath = 'm 0,0 h 100'; // Width 100, at y=0
+/** Augmentation Dash (simple horizontal line) */
+export const augmentationDashPath = 'm 0,0 h 50'; // Width 50, at y=0 (adjust width as needed)
+/** Tie/Slur Path (basic curve) */
+export const tiePath = `M 0,10 C 25,30 75,30 100,10 C 75,20 25,20 0,10 Z`; // Basic arc below baseline
+/** Dot Path (circle for octave/augmentation) */
+export const dotPath = 'M 0 0 a 15 15 0 1 0 0.0001 0 z'; // Circle centered at 0,0, radius 15

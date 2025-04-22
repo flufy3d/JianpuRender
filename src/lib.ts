@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
-import * as sr from './index';
+// Expose the library components to a global variable (e.g., 'jr' for JianpuRender)
+import * as jr from './index';
 // tslint:disable-next-line
-(window as any).sr = sr;
+(window as any).jr = jr;

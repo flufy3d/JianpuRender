@@ -15,9 +15,32 @@
  * =============================================================================
  */
 
-/** 15% of accidentals width */
-export const STEM_WIDTH = 15;
-/** 1 pixel */
-export const LINE_STROKE = 1;
-/** 150% of accidentals width */
-export const COMPACT_SPACING = 150;
+/** Stroke width for lines like bar lines, underlines */
+export const LINE_STROKE_WIDTH = 1; // Pixel width for SVG strokes
+
+/** Horizontal spacing multiplier in compact mode (relative to base note size) */
+export const COMPACT_SPACING_FACTOR = 1.5; // e.g., 1.5 times the note number width
+
+/** Vertical spacing between underlines (relative to note height) */
+export const UNDERLINE_SPACING_FACTOR = 0.2;
+
+/** Vertical offset for octave dots (relative to note height) */
+export const OCTAVE_DOT_OFFSET_FACTOR = 0.6;
+
+/** Size of octave/augmentation dots (relative to note height) */
+export const DOT_SIZE_FACTOR = 0.25;
+
+/** Length of augmentation dash (relative to note width) */
+export const AUGMENTATION_DASH_FACTOR = 0.8;
+
+/** Horizontal spacing after accidentals (relative to note height) */
+export const ACCIDENTAL_SPACING_FACTOR = 0.1;
+
+/** Horizontal spacing after augmentation dots/dashes (relative to note height) */
+export const AUGMENTATION_SPACING_FACTOR = 0.2;
+
+/** Default font size multiplier relative to config.noteHeight */
+export const FONT_SIZE_MULTIPLIER = 1.8; // Adjust for good number size
+
+/** Font size multiplier for smaller elements like accidentals, time signatures */
+export const SMALL_FONT_SIZE_MULTIPLIER = 1.4;

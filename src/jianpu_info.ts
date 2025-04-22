@@ -26,11 +26,11 @@ export interface NoteInfo {
   /** Note intensity according to MIDI velocity */
   intensity: number;
 }
-  
+
 /** Stores information related to a tempo change on a score (not used yet) */
 export interface TempoInfo {
   /** Starting time, in quarter note quantities (float) */
-  start: number; 
+  start: number;
   /** Quarters Per Minute from this quarter on, unless further changes */
   qpm: number;
 }
@@ -38,9 +38,9 @@ export interface TempoInfo {
 /** Stores information related to a key signature change on a score */
 export interface KeySignatureInfo {
   /** Starting time, in quarter note quantities (float) */
-  start: number; 
-  /** Key signature from this quarter on, unless further changes */
-  key: number;
+  start: number;
+  /** Key signature (0=C, 1=C#/Db, ..., 11=B) from this quarter on */
+  key: number; // Represents the *tonic* key, e.g., 0 for C, 7 for G, 5 for F
 }
 
 /** Stores information related to a time signature change on a score */
@@ -48,20 +48,20 @@ export interface TimeSignatureInfo {
   /** Starting time, in quarter note quantities (float) */
   start: number;
   /** Would hold 3 in a 3/4 time signature change */
-  numerator: number; 
+  numerator: number;
   /** Would hold 4 in a 3/4 time signature change */
   denominator: number;
 }
 
-/** Stores the bare minimal information related to a full single staff score */
-export interface StaffInfo {
-  /** All notes in a staff. There's no need to be sorted by start q */
+/** Stores the bare minimal information related to a full single Jianpu score */
+export interface JianpuInfo {
+  /** All notes in the score. There's no need to be sorted by start q */
   notes: NoteInfo[];
-  /** All tempo changes in a staff. They will get sorted by start q */
+  /** All tempo changes in the score. They will get sorted by start q */
   tempos?: TempoInfo[];
-  /** All key signature changes in a staff. They will get sorted by start q */
+  /** All key signature changes in the score. They will get sorted by start q */
   keySignatures?: KeySignatureInfo[];
-  /** All time signature changes in a staff. They will get sorted by start q */
+  /** All time signature changes in the score. They will get sorted by start q */
   timeSignatures?: TimeSignatureInfo[];
 }
 
@@ -73,21 +73,25 @@ export const DEFAULT_TEMPO: TempoInfo = {
 /** Default key in case none is found (C key) */
 export const DEFAULT_KEY_SIGNATURE: KeySignatureInfo = {
   start: 0,
-  key: 0
+  key: 0 // 0 represents C Major
 };
 /** Default time signature in case none is found (4/4) */
 export const DEFAULT_TIME_SIGNATURE: TimeSignatureInfo = {
-  start: 0, 
-  numerator: 4, 
+  start: 0,
+  numerator: 4,
   denominator: 4
 };
 
 /**
- * Calculates the number of quarters that fits within a bar in a given
- * time signature
+ * Calculates the number of quarters that fits within a measure (bar)
+ * in a given time signature
  * @param timeSignature The time signature
  * @returns The number of quarters that fit in
  */
-export function getBarLength(timeSignature: TimeSignatureInfo): number {
-  return timeSignature.numerator * 4 / timeSignature.denominator;
+export function getMeasureLength(timeSignature: TimeSignatureInfo): number {
+  // The length of a measure in quarter notes depends on the time signature.
+  // For example, 4/4 has 4 quarter notes. 3/4 has 3 quarter notes.
+  // 6/8 has 6 eighth notes, which is 3 quarter notes.
+  // This calculation assumes the denominator represents the beat unit directly.
+  return timeSignature.numerator * (4 / timeSignature.denominator);
 }

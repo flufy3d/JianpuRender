@@ -1,5 +1,5 @@
 import { testData } from '../test/basic_symbols_features';
-import { StaffSVGRender } from '../src/index';
+import { JianpuSVGRender } from '../src/index';
 
 // Initialize container
 const demoContainer = document.getElementById('demo-container')!;
@@ -12,12 +12,12 @@ testData.forEach((testCase, index) => {
   caseDiv.innerHTML = `
     <h3>${index + 1}. ${testCase.title}</h3>
     <p>${testCase.description}</p>
-    <div class="staff-container" id="case-${index}"></div>
+    <div class="jianpu-container" id="case-${index}"></div>
     <hr>
   `;
   demoContainer.appendChild(caseDiv);
 
   // Render notation
-  const staffContainer = document.getElementById(`case-${index}`)! as HTMLDivElement;
-  new StaffSVGRender(testCase.data, {}, staffContainer);
+  const jianpuContainer = document.getElementById(`case-${index}`)! as HTMLDivElement;
+  new JianpuSVGRender(testCase.data, {}, jianpuContainer);
 });

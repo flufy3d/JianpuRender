@@ -15,65 +15,47 @@
  * =============================================================================
  */
 
-/** 1/16 of a quarter note (1/64th note) */
-export const MIN_RESOLUTION = 0.0625; // TODO: Unify
+/** 1/16 of a quarter note (1/64th note) - smallest unit visually represented by underlines */
+export const MIN_RESOLUTION = 0.0625; // 1/16th quarter = 64th note
 
-/** 
- * Minimal duration recognized note, which currently is valid for sixtyfourth 
- * note (1/16 of a quarter note) triplets and quintuplets.
+/**
+ * Minimal duration recognized note for internal calculations.
+ * Allows for fine timing distinctions even if not visually distinct.
  */
-export const MAX_QUARTER_DIVISION = 16*3*5; // TODO: merge with equivalent constants
+export const MAX_QUARTER_DIVISION = 16 * 3 * 5; // = 240. Allows sixtyfourth triplets/quintuplets
 
-/** Chromatic scales per key, encoded for staff note placement */
-export const SCALES = [ // Accidentals: 0=none, 1=sharp, 2=flat, 3=normal
-  { // Chromatic  C C#/Db D D#/Eb E   F F#/Gb G G#/Ab A A#/Bb B   / KEY
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // C
-    accidental: [ 0,  1,  0,  1,  0,  0,  1,  0,  1,  0,  1,  0] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -6], // Db
-    accidental: [ 0,  0,  3,  0,  3,  0,  0,  3,  0,  3,  0,  3] }, {
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // D
-    accidental: [ 3,  0,  0,  1,  0,  3,  0,  0,  1,  0,  1,  0] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -6], // Eb
-    accidental: [ 0,  2,  0,  0,  3,  0,  2,  0,  0,  3,  0,  3] }, {
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // E
-    accidental: [ 3,  0,  3,  0,  0,  3,  0,  3,  0,  0,  1,  0] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -6], // F
-    accidental: [ 0,  2,  0,  2,  0,  0,  2,  0,  2,  0,  0,  3] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -7], // Gb
-    accidental: [ 3,  0,  3,  0,  3,  0,  0,  3,  0,  3,  0,  0] }, {
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // G
-    accidental: [ 0,  1,  0,  1,  0,  3,  0,  0,  1,  0,  1,  0] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -6], // Ab
-    accidental: [ 0,  0,  3,  0,  3,  0,  2,  0,  0,  3,  0,  3] }, {
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // A
-    accidental: [ 3,  0,  0,  1,  0,  3,  0,  3,  0,  0,  1,  0] }, {
-    steps:      [ 0, -1, -1, -2, -2, -3, -4, -4, -5, -5, -6, -6], // Bb
-    accidental: [ 0,  2,  0,  0,  3,  0,  2,  0,  2,  0,  0,  3] }, {
-    steps:      [ 0,  0, -1, -1, -2, -3, -3, -4, -4, -5, -5, -6], // B
-    accidental: [ 3,  0,  3,  0,  0,  3,  0,  3,  0,  3,  0,  0] }
+/**
+ * Simple mapping from MIDI pitch % 12 to Note Names (using sharps primarily).
+ * Used for determining key signature display (e.g., "1=C", "1=G").
+ */
+export const PITCH_CLASS_NAMES = [
+    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
 ];
 
-/** 
- * A list of all key accidentals indicating the accidental kind (1 = sharp
- * and 2 = flat) and the MIDI note it is associated to
+/**
+ * Defines the intervals (in semitones) of a major scale relative to the tonic.
+ * Used for mapping MIDI pitches to Jianpu numbers (1-7) within a key.
+ * Interval: 0  2  4  5  7  9  11
+ * Degree:   1  2  3  4  5  6  7
  */
-export const KEY_ACCIDENTALS = [
-  {accidental: 1, pitches: []},                       // C
-  {accidental: 2, pitches: [70, 75, 68, 73, 66]},     // Db
-  {accidental: 1, pitches: [78, 73]},                 // D
-  {accidental: 2, pitches: [70, 75, 68]},             // Eb
-  {accidental: 1, pitches: [78, 73, 80, 75]},         // E
-  {accidental: 2, pitches: [70]},                     // F
-  {accidental: 2, pitches: [70, 75, 68, 73, 66, 71]}, // Gb
-  {accidental: 1, pitches: [78]},                     // G
-  {accidental: 2, pitches: [70, 75, 68, 73]},         // Ab
-  {accidental: 1, pitches: [78, 73, 80]},             // A
-  {accidental: 2, pitches: [70, 75]},                 // Bb
-  {accidental: 1, pitches: [78, 73, 80, 75, 70]}      // B
-];
+export const MAJOR_SCALE_INTERVALS: { [interval: number]: number } = {
+    0: 1,  // Tonic
+    2: 2,  // Major Second
+    4: 3,  // Major Third
+    5: 4,  // Perfect Fourth
+    7: 5,  // Perfect Fifth
+    9: 6,  // Major Sixth
+    11: 7  // Major Seventh
+};
 
-/** Treble clef value. Number is reference MIDI pitch value */
-export const TREBLE_CLEF = 71;
+// Note: Minor keys or modes would require different interval mappings.
+// This implementation primarily assumes major keys for simplicity.
 
-/** Bass clef value. Number is reference MIDI pitch value */
-export const BASS_CLEF = 50;
+/**
+ * Reference MIDI pitch for Middle C (C4)
+ */
+export const MIDDLE_C_MIDI = 60;
+
+// Constants related to Staff rendering (Clefs, specific VSteps, SCALES) are removed.
+// KEY_ACCIDENTALS structure might be needed if implementing automatic key signature
+// accidental rendering beyond just "1=X", but is removed for now for simplicity.

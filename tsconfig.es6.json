@@ -6,7 +6,7 @@
     "declaration": true,
     "allowJs": false,
     "sourceMap": true,
-    "lib": ["es2015", "dom"],
+    "lib": ["es2016", "dom"],
     "types": [],
     "outDir": "./es6",
     "noUnusedLocals": true,

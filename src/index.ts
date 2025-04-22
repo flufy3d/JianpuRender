@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-export * from './staff_svg_render';
-export * from './staff_model';
-export * from './staff_block';
-export * from './staff_info';
+export * from './jianpu_svg_render';
+export * from './jianpu_model';
+export * from './jianpu_block';
+export * from './jianpu_info';

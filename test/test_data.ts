@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { StaffInfo } from '../src/index';
+import { JianpuInfo } from '../src/index';
 
 /** Holds functional unit test data and descriptions */
 export interface TestData {
@@ -25,5 +25,5 @@ export interface TestData {
   /** The detailed description */
   description: string;
   /** The data */
-  data: StaffInfo;
+  data: JianpuInfo;
 }
