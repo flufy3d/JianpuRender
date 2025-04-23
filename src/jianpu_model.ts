@@ -189,9 +189,16 @@ private infoToBlocks(): void {
         // --- Split by Beat ---
         let remainingBeatSplit = currentBlock.splitToBeat(this.measuresInfo);
         if (remainingBeatSplit) {
-            // 修复2: 确保分割后的剩余部分被正确处理
+            // 在将剩余部分加入队列前，先将当前块合并到map中
+            if(!processedBlocks.has(currentBlock.start)) {
+                currentBlock.mergeToMap(this.jianpuBlockMap);
+                processedBlocks.add(currentBlock.start);
+            } else {
+                currentBlock.mergeToMap(this.jianpuBlockMap);
+            }
+            
             blockProcessingQueue.unshift(remainingBeatSplit);
-            continue; // 先处理分割后的剩余部分
+            continue;
         }
 
         // --- Split by Standard Symbol Length ---
