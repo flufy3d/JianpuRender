@@ -413,8 +413,7 @@ export class JianpuSVGRender {
        x: number,
        linkedNoteMap: LinkedNoteMap
    ): number {
-
-       console.log('drawJianpuBlock');
+    
        let blockWidth = 0;
        const isCompact = this.config.pixelsPerTimeStep <= 0;
        const isMeasureStart = block.isMeasureBeginning();

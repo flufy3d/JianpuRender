@@ -169,7 +169,6 @@ export class JianpuBlock {
         this.start = jianpuNote.start;
         this.length = jianpuNote.length;
         this.notes.push(jianpuNote);
-        this.measureNumber = 0; // Will be set properly by the model
         return true;
     }
 

@@ -176,10 +176,10 @@ private infoToBlocks(): void {
 
     let blockProcessingQueue: JianpuBlock[] = [];
 
-    // Prime the queue with the first block(s)
-    if (sortedStarts.length > 0) {
-        blockProcessingQueue.push(rawBlocks.get(sortedStarts[0])!);
-    }
+
+    sortedStarts.forEach(start => {
+        blockProcessingQueue.push(rawBlocks.get(start)!);
+    });
 
     const processedBlocks = new Set<number>(); // Track starts already put into final map
 
@@ -189,34 +189,27 @@ private infoToBlocks(): void {
         // --- Split by Beat ---
         let remainingBeatSplit = currentBlock.splitToBeat(this.measuresInfo);
         if (remainingBeatSplit) {
-            // If split occurred, queue the remainder and process the first part
-            blockProcessingQueue.push(remainingBeatSplit);
-            // Sort queue to maintain order (simple push might suffice if always splitting forward)
-             blockProcessingQueue.sort((a,b) => a.start - b.start);
+            // 修复2: 确保分割后的剩余部分被正确处理
+            blockProcessingQueue.unshift(remainingBeatSplit);
+            continue; // 先处理分割后的剩余部分
         }
-        // Now 'currentBlock' is potentially shorter, ending on a beat boundary
 
         // --- Split by Standard Symbol Length ---
         let remainingSymbolSplit : JianpuBlock | null = null;
-         do {
-              remainingSymbolSplit = currentBlock.splitToStandardSymbol(this.measuresInfo);
-              // 'currentBlock' now has a standard length and its render properties are calculated
+        do {
+            remainingSymbolSplit = currentBlock.splitToStandardSymbol(this.measuresInfo);
+            
+            if(!processedBlocks.has(currentBlock.start)) {
+                currentBlock.mergeToMap(this.jianpuBlockMap);
+                processedBlocks.add(currentBlock.start);
+            } else {
+                currentBlock.mergeToMap(this.jianpuBlockMap);
+            }
 
-              // Add the fully processed part to the final map
-              if(!processedBlocks.has(currentBlock.start)) {
-                   currentBlock.mergeToMap(this.jianpuBlockMap);
-                   processedBlocks.add(currentBlock.start);
-              } else {
-                   // Block at this start time already added, attempt merge (e.g. overlapping notes resolved)
-                    currentBlock.mergeToMap(this.jianpuBlockMap);
-              }
-
-
-              if (remainingSymbolSplit) {
-                  currentBlock = remainingSymbolSplit; // Continue splitting the remainder
-              }
-         } while(remainingSymbolSplit);
-
+            if (remainingSymbolSplit) {
+                currentBlock = remainingSymbolSplit;
+            }
+        } while(remainingSymbolSplit);
     }
   }
 
@@ -338,8 +331,6 @@ export function mapMidiToJianpu(midiPitch: number, key: number): {
 
   // Octave dots relative to tonic octave
   const octaveDot = Math.round((midiPitch - tonicMidi) / 12);
-
-  console.log(jianpuNumber);
 
   return {
       jianpuNumber,

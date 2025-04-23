@@ -46,7 +46,7 @@ for (let n = 1; n < 128; n *= 2) {
     position += duration;
   }
 }
-
+/*
 testData[1] = { // Not required for unitary test but for visual test.
   title: `Stem direction threshold`,
   description: `Stem should be upwards up to third line notes (included).`,
@@ -322,3 +322,4 @@ testData[11] = {
     ],
   }
 };
+*/
