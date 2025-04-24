@@ -248,29 +248,25 @@ export class JianpuSVGRender {
    private updateLayout(contentWidth?: number) {
         this.width = contentWidth ?? this.width;
         if (this.config.width > 0) {
-            this.width = this.config.width; // Use fixed width if specified
+            this.width = this.config.width;
         }
-
-        // Ensure minimum height
-        this.height = Math.max(this.height, this.config.noteHeight * 5); // Ensure enough space
+   
+        // 增加基线偏移量，为签名留出更多空间
+        this.height = Math.max(this.height, this.config.noteHeight * 6); // 从5增加到6
         if (this.config.height > 0) {
-            this.height = this.config.height; // Use fixed height if specified
+            this.height = this.config.height;
         }
-
-
+   
+        // 增加yBaseline的值，使乐谱内容下移
+        const verticalPadding = this.config.noteHeight * 0.95; // 增加0.5倍noteHeight的间距
         this.mainSVG.setAttribute('width', `${this.width}`);
         this.mainSVG.setAttribute('height', `${this.height}`);
-        this.mainG.setAttribute('transform', `translate(0, ${this.yBaseline})`); // Apply baseline offset
-
-        this.overlaySVG.setAttribute('width', '200'); // Fixed width for overlay, adjust as needed
+        this.mainG.setAttribute('transform', `translate(0, ${this.yBaseline + verticalPadding})`); // 增加垂直间距
+   
+        this.overlaySVG.setAttribute('width', '200');
         this.overlaySVG.setAttribute('height', `${this.height}`);
-        this.overlayG.setAttribute('transform', `translate(0, ${this.yBaseline})`); // Match baseline
-
-
-        // Adjust parent scroll container height if needed (optional)
-        // this.parentElement.style.height = `${this.height}px`;
-        // this.div.style.height = `${this.height}px`; // Set container height explicitly
-    }
+        this.overlayG.setAttribute('transform', `translate(0, ${this.yBaseline})`); // 签名保持原位置
+   }
 
   /**
    * Redraws the score or highlights notes.
@@ -425,8 +421,8 @@ export class JianpuSVGRender {
        if (isMeasureStart && block.start > 1e-6) { // Don't draw bar at time 0
            const barX = x - (isCompact ? this.estimatedNoteWidth * 0.2 : 2); // Position slightly before block
            // Adjust bar height based on estimated content height or fixed value
-           const barHeight = this.config.noteHeight * 2.5; // Example height
-           const barY = -barHeight / 2; // Center bar vertically around baseline
+           const barHeight = this.config.noteHeight * 2; // Example height
+           const barY = 0; // Center bar vertically around baseline
            const bar = drawSVGPath(this.musicG, barPath, barX, barY, 1, barHeight / PATH_SCALE); // Scale bar path (height 100)
            setStroke(bar, this.config.noteColor, LINE_STROKE_WIDTH);
            if (isCompact) {
@@ -524,7 +520,7 @@ private drawNotes(
 
         // --- Note Number ---
         const numText = `${note.jianpuNumber}`;
-        const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'bold', 'start', 'middle', this.config.noteColor);
+        const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
         const numWidth = num.getBBox().width;
         noteEndX = noteStartX + numWidth; // Number defines the main body width for now
 
@@ -701,7 +697,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
    * @returns The width of the drawn signatures.
    */
    private drawSignatures(
-       container: SVGGElement, // ***** TYPE CHANGED HERE *****
+       container: SVGGElement,
        x: number,
        drawKey: boolean,
        drawTime: boolean
@@ -715,22 +711,25 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
        if (drawKey) {
            const keyName = PITCH_CLASS_NAMES[this.currentKey % 12] ?? 'C';
            const keyText = `1=${keyName}`;
-           const keySig = drawSVGText(container, keyText, currentX, 0, keyFontSize, 'bold', 'start', 'middle', this.config.noteColor);
+           const keySig = drawSVGText(container, keyText, currentX, 0, keyFontSize, 'normal', 'start', 'middle', this.config.noteColor);
            currentX += keySig.getBBox().width + spacing * 2; // More space after key sig
        }
 
        // --- Time Signature (e.g., 4/4) ---
        if (drawTime) {
-            const numStr = `${this.currentTimeSignature.numerator}`;
-            const denStr = `${this.currentTimeSignature.denominator}`;
-            const ySpacing = this.smallFontSize * 0.6; // Vertical spacing for time sig
-
-            // Numerator (top number) - anchor bottom
-            const numSig = drawSVGText(container, numStr, currentX, -ySpacing, timeFontSize, 'bold', 'start', 'baseline', this.config.noteColor);
-            // Denominator (bottom number) - anchor top
-            const denSig = drawSVGText(container, denStr, currentX, ySpacing, timeFontSize, 'bold', 'start', 'hanging', this.config.noteColor);
-
-            currentX += Math.max(numSig.getBBox().width, denSig.getBBox().width) + spacing;
+            const timeStr = `${this.currentTimeSignature.numerator}/${this.currentTimeSignature.denominator}`;
+            const timeSig = drawSVGText(
+                container, 
+                timeStr, 
+                currentX, 
+                0,  // 保持与基线对齐
+                timeFontSize, 
+                'normal', 
+                'start', 
+                'middle',  // 垂直居中
+                this.config.noteColor
+            );
+            currentX += timeSig.getBBox().width + spacing;
        }
 
        const totalWidth = currentX - x;

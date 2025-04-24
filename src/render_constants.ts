@@ -40,7 +40,7 @@ export const ACCIDENTAL_SPACING_FACTOR = 0.1;
 export const AUGMENTATION_SPACING_FACTOR = 0.2;
 
 /** Default font size multiplier relative to config.noteHeight */
-export const FONT_SIZE_MULTIPLIER = 1.8; // Adjust for good number size
+export const FONT_SIZE_MULTIPLIER = 1.2; // Adjust for good number size
 
 /** Font size multiplier for smaller elements like accidentals, time signatures */
-export const SMALL_FONT_SIZE_MULTIPLIER = 1.4;
+export const SMALL_FONT_SIZE_MULTIPLIER = 1.0;
