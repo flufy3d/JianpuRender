@@ -640,7 +640,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
 
     // --- Rest Symbol ('0') ---
     const restSymbol = '0';
-    const restText = drawSVGText(blockGroup, restSymbol, 0, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
+    const restText = drawSVGText(blockGroup, restSymbol, currentX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
     const restWidth = restText.getBBox().width;
     noteEndX = currentX + restWidth;
 
