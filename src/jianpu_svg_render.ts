@@ -468,6 +468,18 @@ export class JianpuSVGRender {
              blockWidth = Math.max(signatureWidth, contentWidth);
         }
 
+        // --- 更新结束小节线判断
+        const isFinalBlock = this.jianpuModel.isLastMeasureAtQ(block.start + block.length);
+        if (isFinalBlock) {
+            const barX = x + blockWidth;
+            const barHeight = this.config.noteHeight * 2;
+            const barY = 0;
+            const bar = drawSVGPath(this.musicG, barPath, barX, barY, 1, barHeight / PATH_SCALE);
+            setStroke(bar, this.config.noteColor, LINE_STROKE_WIDTH);
+            if (isCompact) {
+                blockWidth += LINE_STROKE_WIDTH;
+            }
+        }
 
        return blockWidth; // Return the width *occupied* by this block's drawing operations
    }

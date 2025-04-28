@@ -56,6 +56,25 @@ export class JianpuModel {
     this.update(jianpuInfo, defaultKey);
   }
 
+
+  /**
+   * 判断给定时间是否处于乐谱最后一个小节
+   * @param q 要检查的四分音符时间位置
+   * @returns 如果处于最后小节返回true
+   */
+  public isLastMeasureAtQ(q: number): boolean {
+    return q >= this.lastQ - 1e-6; // 允许浮点数精度误差
+  }
+
+  /**
+   * 获取乐谱总时长(用于外部访问lastQ)
+   */
+  public getTotalDuration(): number {
+    return this.lastQ;
+  }
+
+
+
   /**
    * Processes new JianpuInfo to update the internal model.
    * Sorts input arrays and ensures defaults are present.
@@ -74,7 +93,7 @@ export class JianpuModel {
         this.lastQ = Math.max(this.lastQ, note.start + note.length);
     });
     // Add a small buffer to lastQ to ensure the final block is processed
-    this.lastQ += 0.001;
+    this.lastQ += 1e-6;
 
 
     // Ensure tempos exist and start at 0
