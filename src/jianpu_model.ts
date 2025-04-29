@@ -316,12 +316,12 @@ private infoToBlocks(): void {
 export function mapMidiToJianpu(midiPitch: number, key: number): {
   jianpuNumber: number;
   octaveDot: number;
-  accidental: number; // 0: none, 1:#, 2:b, 3:natural
+  accidental: number;
 } {
   // Find the MIDI pitch of the tonic in the same octave as Middle C
   const keyPitchClass = key % 12;
   let tonicMidiRef = MIDDLE_C_MIDI + keyPitchClass;
-  if (keyPitchClass < (MIDDLE_C_MIDI % 12)) {
+  if (keyPitchClass > (MIDDLE_C_MIDI % 12)) {
       tonicMidiRef -= 12;
   }
   // Adjust tonic to nearest octave to midiPitch
@@ -356,8 +356,8 @@ export function mapMidiToJianpu(midiPitch: number, key: number): {
   }
 
   // Octave dots relative to tonic octave
-  const octaveDot = Math.round((midiPitch - tonicMidi) / 12);
-
+  const octaveDot = Math.floor((midiPitch - tonicMidiRef) / 12);
+  
   return {
       jianpuNumber,
       octaveDot,
