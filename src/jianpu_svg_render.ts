@@ -539,14 +539,17 @@ private drawNotes(
 
         // --- Octave Dots ---
         const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
-        const dotScale = dotSize / (PATH_SCALE * 0.15); // Scale factor for dot path
-        const dotX = noteStartX + numWidth / 2; // Center dot relative to number's start X
+        const dotScale = dotSize / (PATH_SCALE * 0.15);
+        const dotX = noteStartX + numWidth / 2;
         if (note.octaveDot !== 0) {
-            const dotYOffset = (this.config.noteHeight * OCTAVE_DOT_OFFSET_FACTOR + dotSize / 2);
+            // 修改点间距计算，增加垂直间距
+            const dotSpacing = dotSize * 1.5; // 增加点之间的间距
+            const baseOffset = this.config.noteHeight * OCTAVE_DOT_OFFSET_FACTOR;
+            
             for (let i = 0; i < Math.abs(note.octaveDot); i++) {
-                const y = (note.octaveDot > 0 ? -1 : 1) * (dotYOffset + i * (dotSize + dotSize * 0.2));
-                // Note: Drawing dot relative to noteG, so use relative coordinates
-                drawSVGPath(noteG, dotPath, dotX - noteStartX, y, dotScale, dotScale);
+                // 使用绝对坐标而非相对坐标
+                const y = (note.octaveDot > 0 ? -baseOffset : baseOffset) - (i * dotSpacing);
+                drawSVGPath(noteG, dotPath, dotX, y, dotScale, dotScale);
             }
         }
 
