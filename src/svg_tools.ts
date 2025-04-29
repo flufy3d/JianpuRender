@@ -209,14 +209,10 @@ export function setBlinkAnimation(
   * @param defaultColor The color to revert to
   */
  export function resetElementHighlight(e: SVGElement, defaultColor: string) {
-      const children = e.querySelectorAll('text, path');
+      const children = e.querySelectorAll<SVGElement>('text, path');
       children.forEach((child: SVGElement) => {
           if (child.getAttribute('fill') !== 'none') {
               child.setAttribute('fill', defaultColor);
           }
-         // Reset stroke if it was highlighted
-         // child.setAttribute('stroke', defaultColor);
       });
-      // Reset group fill if it was set directly
-     // e.setAttribute('fill', defaultColor);
- }
+}
