@@ -44,14 +44,7 @@ export interface JianpuNote extends NoteInfo {
   tiedFrom?: JianpuNote;
   /** Reference to following tied note */
   tiedTo?: JianpuNote;
-  // Derived properties for rendering:
-  /** Number of underlines for duration (e.g., 1 for 8th, 2 for 16th) */
-  durationLines?: number;
-  /** Number of augmentation dots */
-  augmentationDots?: number;
-  /** True if an augmentation dash is needed (for notes longer than quarter) */
-  augmentationDash?: boolean; // Simple flag for now
-  // Consider adding more detail like number of dashes if needed
+
 }
 
 /** Checks if a number is close to zero within a small tolerance */
@@ -93,10 +86,6 @@ export function splitJianpuNote(jianpuNote: JianpuNote, quarters: number): Jianp
   }
   jianpuNote.tiedTo = splitted; // The modified original note is tied *to* the new split part
 
-  // Invalidate rendering properties of the original note - they need recalc
-  delete jianpuNote.durationLines;
-  delete jianpuNote.augmentationDots;
-  delete jianpuNote.augmentationDash;
 
   return splitted;
 }
