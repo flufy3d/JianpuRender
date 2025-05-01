@@ -504,7 +504,6 @@ private drawNotes(
     const FONT_SIZE = `${this.numberFontSize}px`;
     const SMALL_FONT_SIZE = `${this.smallFontSize}px`;
 
-    // These should have been calculated by calculateRenderProperties on the block
     const { durationLines = 0, augmentationDots = 0, augmentationDash = false } = block;
 
 
@@ -643,11 +642,6 @@ private drawNotes(
 private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number {
     const FONT_SIZE = `${this.numberFontSize}px`;
     const noteSpacing = this.estimatedNoteWidth * 0.1;
-
-    // Ensure rendering properties are calculated
-    if (block.durationLines === undefined) {
-        block.calculateRenderProperties(this.jianpuModel.measuresInfo);
-    }
 
     const { durationLines = 0, augmentationDots = 0, augmentationDash = false } = block;
     let currentX = x; // Position relative to block start

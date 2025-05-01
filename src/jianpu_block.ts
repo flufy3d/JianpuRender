@@ -380,26 +380,30 @@ export class JianpuBlock {
 
 
     /**
-     * Calculates and sets the rendering properties (duration lines, dots, dashes)
-     * based on the block's length.
-     * This should be called *after* all splitting is done.
-     * @param measuresInfo Provides context, e.g., allowDottedRests.
+     * Calculates and sets the rendering properties (duration lines, dots, dashes).
+     * Call this AFTER all splitting.
+     * @param measuresInfo Provides context (e.g., allowDottedRests).
+     * @param durationOverride Optional total duration of the tied event for calculation.
      */
-    public calculateRenderProperties(measuresInfo: MeasuresInfo): void {
+    public calculateRenderProperties(measuresInfo: MeasuresInfo, durationOverride?: number): void {
         // Reset properties
         delete this.durationLines;
         delete this.augmentationDots;
         delete this.augmentationDash;
 
-        const blockLength = this.length;
+        // Use override if provided, otherwise use the block's own length
+        const blockLength = durationOverride !== undefined ? durationOverride : this.length;
+
         if (isSafeZero(blockLength) || blockLength < 0) return; // Ignore zero or negative length
 
+
         // --- Handle Dotted Notes ---
-        // Check for common dotted lengths (dotted half, quarter, eighth, etc.)
+        // Check for common dotted lengths...
+        const dottedHalf = 3.0;
         const dottedQuarter = 1.5;
         const dottedEighth = 0.75;
         const dottedSixteenth = 0.375;
-        const dottedHalf = 3.0;
+        
 
         if (measuresInfo.allowDottedRests || this.notes.length > 0) {
             if (isSafeZero(blockLength - dottedQuarter)) { // Dotted Quarter (1.)
@@ -427,48 +431,123 @@ export class JianpuBlock {
              }
         }
 
-        // --- Handle Regular Durations and Dashes/Lines ---
-        if (blockLength >= 4.0 - 1e-6) { // Whole note or longer
-             this.augmentationDash = true; // Requires dashes
-             // Determine number of dashes based on length (e.g., length 4 = 3 dashes?)
-             // Convention needed here. Let's use Math.floor(length) - 1 dashes for >= 2
-             // Example: length 4 -> 3 dashes; length 2 -> 1 dash
-             this.augmentationDots = Math.max(0, Math.floor(blockLength + 1e-6) - 1); // Using dots count as dash count for now
-        } else if (blockLength >= 2.0 - 1e-6) { // Half Note
+        // --- Revised Regular Durations and Dashes/Lines ---
+
+        // 1. Determine Base Symbol (Quarter, Half, Whole etc.) and initial lines/dashes
+        let baseLength = 0;
+        if (blockLength >= 4.0 - 1e-6) { // Whole note base (or longer)
+            baseLength = 4.0;
             this.augmentationDash = true;
-            this.augmentationDots = 1; // Representing 1 dash for half note
-        } else if (blockLength >= 1.0 - 1e-6) { // Quarter Note
-            // No lines, no dashes
-        } else if (blockLength >= 0.5 - 1e-6) { // Eighth Note
+            // Dashes = floor(length) - 1. For length 4, dashes=3. Store count in augmentationDots?
+            this.augmentationDots = Math.max(0, Math.floor(blockLength + 1e-6) - 1); // Temporarily store dash count here
+        } else if (blockLength >= 2.0 - 1e-6) { // Half Note base
+            baseLength = 2.0;
+            this.augmentationDash = true;
+            this.augmentationDots = 1; // 1 dash for half note
+        } else if (blockLength >= 1.0 - 1e-6) { // Quarter Note base
+            baseLength = 1.0;
+            // No lines/dashes/dots yet
+        } else if (blockLength >= 0.5 - 1e-6) { // Eighth Note base
+            baseLength = 0.5;
             this.durationLines = 1;
-        } else if (blockLength >= 0.25 - 1e-6) { // Sixteenth Note
+        } else if (blockLength >= 0.25 - 1e-6) { // Sixteenth Note base
+            baseLength = 0.25;
             this.durationLines = 2;
-        } else if (blockLength >= 0.125 - 1e-6) { // 32nd Note
+        } else if (blockLength >= 0.125 - 1e-6) { // 32nd Note base
+            baseLength = 0.125;
             this.durationLines = 3;
-        } else if (blockLength >= 0.0625 - 1e-6) { // 64th Note
+        } else if (blockLength >= 0.0625 - 1e-6) { // 64th Note base
+            baseLength = 0.0625;
             this.durationLines = 4;
         } else {
-            // Note is shorter than representable minimum or an irregular length
-            // Fallback: Render as the shortest possible (e.g., 64th) or warn.
-             if (blockLength > 1e-6) { // Only warn if not effectively zero
-                 console.warn(
-                    '%cJianpuRender:', 'background:orange; color:white',
-                    `Block duration ${blockLength} at t=${this.start} is too short or irregular ` +
-                    `to represent with standard lines/dots/dashes. Rendering as shortest possible (64th).`
-                 );
-             }
-            this.durationLines = 4; // Render as 64th note equivalent
+            // Too short or irregular
+            if (blockLength > 1e-6) {
+                console.warn( /* ... warning message ... */);
+            }
+            this.durationLines = 4; // Render as shortest possible
+            baseLength = 0.0625;
         }
 
-        // --- Handle augmentation dots for non-standard dotted values (if needed) ---
-        // This part is complex. The initial check handles common dotted values.
-        // For lengths like 1.75 (double dotted quarter), more logic is needed.
-        // Current implementation keeps it simpler. If a note wasn't a standard
-        // dotted value, it falls through to the regular duration calculation.
-        // Example: 1.75 would be rendered as a quarter note + 3 dashes (incorrect).
-        // A full implementation would need to detect double/triple dots.
-        // For now, we assume the splitting process creates standard renderable lengths.
-        // Example: A note of length 1.75 would likely be split into 1.5 + 0.25 by beat/symbol splitting.
+        // 2. Check for Augmentation Dots
+        // How much longer is the actual duration than the base symbol's length?
+        let remainder = blockLength - baseLength;
+        let numDots = 0;
+        let expectedDotValue = baseLength / 2.0;
+
+        // Reset augmentationDots if it was used for dashes above
+        if (baseLength >= 2.0) {
+            const dashCount = this.augmentationDots; // Store dash count
+            delete this.augmentationDots; // Clear for actual dots calculation
+            if (dashCount) {
+                // Maybe store dash count separately?
+                // For now, augmentationDash=true signals dashes needed, count implicitly length-1?
+                // Let's assume augmentationDash handles the visual dashes, dots are separate.
+            }
+        }
+
+
+        while (remainder >= expectedDotValue - 1e-6 && expectedDotValue > 1e-7) {
+            numDots++;
+            remainder -= expectedDotValue;
+            expectedDotValue /= 2.0;
+            if (numDots >= 3) break; // Max 3 dots usually
+        }
+
+        if (numDots > 0 && (measuresInfo.allowDottedRests || this.notes.length > 0)) {
+            this.augmentationDots = numDots;
+        }
+
+        // 3. Final Check for Irregular Remainders (should be small if splitting worked)
+        if (remainder > 1e-6) {
+            // This indicates a length that couldn't be perfectly represented
+            // by a base symbol + dots (e.g., non-standard tuplet result?)
+            // The previous logic likely assigned the closest base symbol.
+            console.warn(
+                '%cJianpuRender:', 'background:orange; color:white',
+                `Block duration ${blockLength} (originally ${this.length}) resulted in an unrepresented remainder ${remainder} ` +
+                `after assigning base symbol and ${numDots} dots. Rendering might be approximate.`
+            );
+        }
+
+        // Refinement for dashes: augmentationDash simply means "use dashes if length > 1".
+        // The number of dashes is implicit: floor(baseLength or blockLength?) - 1.
+        // If augmentationDots > 0, the dot is added *after* the dashes.
+        // Example: 5 - . (Dotted whole, length 6) -> augmentationDash=true, augmentationDots=1. Dashes calculated = floor(6)-1 = 5 ? No, base is whole (4), dashes=3. -> 5 - - - .
+        // Example: 5 - - - (Whole, length 4) -> augmentationDash=true, augmentationDots=undefined. Dashes=floor(4)-1=3.
+        // Example: 5 - . (Dotted half, length 3) -> augmentationDash=true, augmentationDots=1. Base=Half(2). Dashes=floor(2)-1=1. -> 5 - .
+        // Example: 5 - (Half, length 2) -> augmentationDash=true, augmentationDots=undefined. Dashes=floor(2)-1=1. -> 5 -
+
+        // Let's keep it simple: augmentationDash = true if baseLength >= 1. augmentationDots = number of dots.
+        // The actual rendering code will need to draw floor(baseLength)-1 dashes if augmentationDash is true, followed by the note number, then the dots.
+        this.augmentationDash = (baseLength >= 1.0 - 1e-6);
+        // augmentationDots is already calculated.
+        // durationLines is already calculated.
+
+        // Clear dash count if stored in dots temporarily
+        if (baseLength >= 4.0 && numDots === 0) {
+            // If it's a plain whole note or longer with no dots, augmentationDots stored dash count. Clear it.
+            // But we need the dash count! Revisit this.
+            // Let augmentationDots *always* be augmentation dots.
+            // Let augmentationDash be true/false.
+            // The renderer calculates dashes needed: if augmentationDash, Math.max(0, Math.floor(baseLength + 1e-6) - 1).
+
+            // Recalculate dots cleanly:
+            delete this.augmentationDots; // Clear any temporary dash count
+            remainder = blockLength - baseLength;
+            numDots = 0;
+            expectedDotValue = baseLength / 2.0;
+            while (remainder >= expectedDotValue - 1e-6 && expectedDotValue > 1e-7) {
+                numDots++;
+                remainder -= expectedDotValue;
+                expectedDotValue /= 2.0;
+                if (numDots >= 3) break; // Max 3 dots usually
+            }
+            if (numDots > 0 && (measuresInfo.allowDottedRests || this.notes.length > 0)) {
+                this.augmentationDots = numDots;
+            }
+
+        }
+
 
     }
 
@@ -485,7 +564,6 @@ export class JianpuBlock {
         const blockLength = this.length;
         if (isSafeZero(blockLength) || blockLength < MIN_RESOLUTION - 1e-6) {
              // Already too short or zero length, cannot split further meaningfully
-             this.calculateRenderProperties(measuresInfo); // Calculate final props
              return null;
         }
 
@@ -541,14 +619,16 @@ export class JianpuBlock {
         let splittedBlock: JianpuBlock | null = null;
         if (blockLength > bestFitLength + 1e-6) { // Only split if there's remaining duration
             splittedBlock = this.split(this.start + bestFitLength, measuresInfo);
+            // Ensure the first part (this block) has the exact bestFitLength
+           if (this.length !== bestFitLength) {
+                console.warn(`Adjusting block length after split from ${this.length} to ${bestFitLength}`);
+                this.length = bestFitLength;
+           }
         } else {
             // The block is exactly a standard symbol length, no split needed.
             // Ensure the length is precisely the standard length found.
             this.length = bestFitLength;
         }
-
-        // Calculate rendering properties for the first part (this block)
-        this.calculateRenderProperties(measuresInfo);
 
         return splittedBlock;
     }
@@ -567,9 +647,6 @@ export class JianpuBlock {
       // Update measure number if the new block had a more accurate one (e.g., after split)
       // This might need refinement based on how measure numbers are tracked.
       if (this.measureNumber !== 0) existingBlock.measureNumber = this.measureNumber;
-
-       // Re-calculate rendering properties for the merged block
-      // existingBlock.calculateRenderProperties(); // Need MeasuresInfo here... maybe defer calculation
 
     } else {
       // Add this block as a new entry

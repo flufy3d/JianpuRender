@@ -189,54 +189,131 @@ private infoToBlocks(): void {
      }
 
 
-    // --- Pass 2: Split blocks by rhythm and symbol length ---
+    // --- Pass 2: Split blocks by rhythm and standard symbols ---
     this.jianpuBlockMap = new Map(); // Final map
-    const sortedStarts = Array.from(rawBlocks.keys()).sort((a, b) => a - b);
-
+    const sortedStartsFromRaw = Array.from(rawBlocks.keys()).sort((a, b) => a - b);
     let blockProcessingQueue: JianpuBlock[] = [];
-
-
-    sortedStarts.forEach(start => {
+    sortedStartsFromRaw.forEach(start => {
         blockProcessingQueue.push(rawBlocks.get(start)!);
     });
 
-    const processedBlocks = new Set<number>(); // Track starts already put into final map
+    const processedBlocksForSplitting = new Set<number>(); // Track starts merged during splitting
 
-    while(blockProcessingQueue.length > 0) {
+    while (blockProcessingQueue.length > 0) {
         let currentBlock = blockProcessingQueue.shift()!;
+
+        // Avoid reprocessing if a block was re-added after split
+        if (processedBlocksForSplitting.has(currentBlock.start) && this.jianpuBlockMap.has(currentBlock.start)) {
+             // It might have been merged already, potentially needs update if split further
+             // For simplicity, let mergeToMap handle updates. Or skip if confident.
+             // Let's re-merge to be safe, addNote should handle consistency.
+             // console.log(`Re-processing ${currentBlock.start}?`);
+        }
+
 
         // --- Split by Beat ---
         let remainingBeatSplit = currentBlock.splitToBeat(this.measuresInfo);
         if (remainingBeatSplit) {
-            // 在将剩余部分加入队列前，先将当前块合并到map中
-            if(!processedBlocks.has(currentBlock.start)) {
-                currentBlock.mergeToMap(this.jianpuBlockMap);
-                processedBlocks.add(currentBlock.start);
-            } else {
-                currentBlock.mergeToMap(this.jianpuBlockMap);
-            }
-            
+             // Merge the first part after beat split
+            currentBlock.mergeToMap(this.jianpuBlockMap);
+            processedBlocksForSplitting.add(currentBlock.start);
+            // Add the remainder back to the front of the queue
             blockProcessingQueue.unshift(remainingBeatSplit);
-            continue;
+            continue; // Process the remainder next
         }
 
         // --- Split by Standard Symbol Length ---
+         // If no beat split, or after beat split handled, process symbol splits
+        let blockToSymbolSplit = currentBlock; // Start with the current block (post-beat-split if any)
         let remainingSymbolSplit : JianpuBlock | null = null;
         do {
-            remainingSymbolSplit = currentBlock.splitToStandardSymbol(this.measuresInfo);
-            
-            if(!processedBlocks.has(currentBlock.start)) {
-                currentBlock.mergeToMap(this.jianpuBlockMap);
-                processedBlocks.add(currentBlock.start);
-            } else {
-                currentBlock.mergeToMap(this.jianpuBlockMap);
+            // Perform the split based on standard symbols
+            remainingSymbolSplit = blockToSymbolSplit.splitToStandardSymbol(this.measuresInfo);
+
+            // Merge the part that has a standard symbol length now
+            blockToSymbolSplit.mergeToMap(this.jianpuBlockMap);
+            processedBlocksForSplitting.add(blockToSymbolSplit.start);
+
+            // If there was a remainder, it becomes the block for the next iteration
+            if (remainingSymbolSplit) {
+                blockToSymbolSplit = remainingSymbolSplit;
+            }
+         } while(remainingSymbolSplit); // Continue if split produced a remainder
+    } // End of splitting loop
+
+
+    // --- Pass 3: Calculate Rendering Properties based on Tied Durations ---
+    const sortedStarts = Array.from(this.jianpuBlockMap.keys()).sort((a, b) => a - b);
+    const startsProcessedForRendering = new Set<number>();
+
+    for (const start of sortedStarts) {
+        if (startsProcessedForRendering.has(start)) {
+            continue; // Already handled as part of a previous tied sequence
+        }
+
+        const firstBlock = this.jianpuBlockMap.get(start)!;
+        startsProcessedForRendering.add(start); // Mark this block as visited
+
+        // Check if this block is the start of a visual event
+        // (i.e., not tied FROM a previous block, or it's a rest)
+        const isEventStart = firstBlock.notes.length === 0 || firstBlock.notes.every(n => !n.tiedFrom);
+
+        if (isEventStart) {
+            let totalEventDuration = 0;
+            let currentBlockInSequence: JianpuBlock | undefined = firstBlock;
+            let currentSequenceStart = start;
+
+             // Follow ties to calculate total duration
+            while (currentBlockInSequence) {
+                totalEventDuration += currentBlockInSequence.length;
+
+                // Check if the *next* block exists and is tied *from* this one
+                const nextBlockStart = currentSequenceStart + currentBlockInSequence.length;
+                 // Use tolerance when getting next block
+                let nextBlock : JianpuBlock | undefined = undefined;
+                for (const potentialNextStart of Array.from(this.jianpuBlockMap.keys())){
+                    if(Math.abs(potentialNextStart - nextBlockStart) < 1e-6) {
+                        nextBlock = this.jianpuBlockMap.get(potentialNextStart);
+                        break;
+                    }
+                }
+
+                // Does the next block continue the tie?
+                // Simplified check: if *any* note ties forward, assume the block continues the tie visually.
+                // Also ensure the next block actually starts where this one ends.
+                if (nextBlock && currentBlockInSequence.notes.some(n => n.tiedTo) && nextBlock.notes.some(n => n.tiedFrom)) {
+                    // Mark the next block as visited so we don't start a new calculation from it
+                    startsProcessedForRendering.add(nextBlock.start);
+                    currentBlockInSequence = nextBlock;
+                    currentSequenceStart = nextBlock.start; // Update start for the next lookup
+                } else {
+                    currentBlockInSequence = undefined; // End of tied sequence
+                }
             }
 
-            if (remainingSymbolSplit) {
-                currentBlock = remainingSymbolSplit;
-            }
-        } while(remainingSymbolSplit);
+            // Now, calculate rendering properties for the first block based on the total duration
+             if (totalEventDuration > 1e-6) {
+                 // Use the block's own method, but conceptually pass the total duration
+                 // We modify calculateRenderProperties to accept an optional duration override
+                 firstBlock.calculateRenderProperties(this.measuresInfo, totalEventDuration);
+             } else {
+                  // Handle zero duration case if necessary (e.g., grace notes, though unlikely here)
+                  delete firstBlock.durationLines;
+                  delete firstBlock.augmentationDots;
+                  delete firstBlock.augmentationDash;
+             }
+
+        } else {
+             // This block is tied FROM a previous one, clear its rendering properties
+             // as they are determined by the starting block of the tie.
+             delete firstBlock.durationLines;
+             delete firstBlock.augmentationDots;
+             delete firstBlock.augmentationDash;
+        }
     }
+
+
+
   }
 
 
