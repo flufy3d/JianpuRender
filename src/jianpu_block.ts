@@ -383,16 +383,15 @@ export class JianpuBlock {
      * Calculates and sets the rendering properties (duration lines, dots, dashes).
      * Call this AFTER all splitting.
      * @param measuresInfo Provides context (e.g., allowDottedRests).
-     * @param durationOverride Optional total duration of the tied event for calculation.
      */
-    public calculateRenderProperties(measuresInfo: MeasuresInfo, durationOverride?: number): void {
+    public calculateRenderProperties(measuresInfo: MeasuresInfo): void {
         // Reset properties
         delete this.durationLines;
         delete this.augmentationDots;
         delete this.augmentationDash;
 
         // Use override if provided, otherwise use the block's own length
-        const blockLength = durationOverride !== undefined ? durationOverride : this.length;
+        const blockLength = this.length;
 
         if (isSafeZero(blockLength) || blockLength < 0) return; // Ignore zero or negative length
 

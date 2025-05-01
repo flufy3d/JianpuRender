@@ -291,25 +291,11 @@ private infoToBlocks(): void {
                 }
             }
 
-            // Now, calculate rendering properties for the first block based on the total duration
-             if (totalEventDuration > 1e-6) {
-                 // Use the block's own method, but conceptually pass the total duration
-                 // We modify calculateRenderProperties to accept an optional duration override
-                 firstBlock.calculateRenderProperties(this.measuresInfo, totalEventDuration);
-             } else {
-                  // Handle zero duration case if necessary (e.g., grace notes, though unlikely here)
-                  delete firstBlock.durationLines;
-                  delete firstBlock.augmentationDots;
-                  delete firstBlock.augmentationDash;
-             }
 
-        } else {
-             // This block is tied FROM a previous one, clear its rendering properties
-             // as they are determined by the starting block of the tie.
-             delete firstBlock.durationLines;
-             delete firstBlock.augmentationDots;
-             delete firstBlock.augmentationDash;
-        }
+        } 
+
+        firstBlock.calculateRenderProperties(this.measuresInfo);
+
     }
 
 
