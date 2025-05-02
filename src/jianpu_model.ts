@@ -242,62 +242,10 @@ private infoToBlocks(): void {
     } // End of splitting loop
 
 
-    // --- Pass 3: Calculate Rendering Properties based on Tied Durations ---
-    const sortedStarts = Array.from(this.jianpuBlockMap.keys()).sort((a, b) => a - b);
-    const startsProcessedForRendering = new Set<number>();
-
-    for (const start of sortedStarts) {
-        if (startsProcessedForRendering.has(start)) {
-            continue; // Already handled as part of a previous tied sequence
-        }
-
-        const firstBlock = this.jianpuBlockMap.get(start)!;
-        startsProcessedForRendering.add(start); // Mark this block as visited
-
-        // Check if this block is the start of a visual event
-        // (i.e., not tied FROM a previous block, or it's a rest)
-        const isEventStart = firstBlock.notes.length === 0 || firstBlock.notes.every(n => !n.tiedFrom);
-
-        if (isEventStart) {
-            let totalEventDuration = 0;
-            let currentBlockInSequence: JianpuBlock | undefined = firstBlock;
-            let currentSequenceStart = start;
-
-             // Follow ties to calculate total duration
-            while (currentBlockInSequence) {
-                totalEventDuration += currentBlockInSequence.length;
-
-                // Check if the *next* block exists and is tied *from* this one
-                const nextBlockStart = currentSequenceStart + currentBlockInSequence.length;
-                 // Use tolerance when getting next block
-                let nextBlock : JianpuBlock | undefined = undefined;
-                for (const potentialNextStart of Array.from(this.jianpuBlockMap.keys())){
-                    if(Math.abs(potentialNextStart - nextBlockStart) < 1e-6) {
-                        nextBlock = this.jianpuBlockMap.get(potentialNextStart);
-                        break;
-                    }
-                }
-
-                // Does the next block continue the tie?
-                // Simplified check: if *any* note ties forward, assume the block continues the tie visually.
-                // Also ensure the next block actually starts where this one ends.
-                if (nextBlock && currentBlockInSequence.notes.some(n => n.tiedTo) && nextBlock.notes.some(n => n.tiedFrom)) {
-                    // Mark the next block as visited so we don't start a new calculation from it
-                    startsProcessedForRendering.add(nextBlock.start);
-                    currentBlockInSequence = nextBlock;
-                    currentSequenceStart = nextBlock.start; // Update start for the next lookup
-                } else {
-                    currentBlockInSequence = undefined; // End of tied sequence
-                }
-            }
-
-
-        } 
-
-        firstBlock.calculateRenderProperties(this.measuresInfo);
-
-    }
-
+    // --- Pass 3: Calculate Rendering Properties  ---
+    this.jianpuBlockMap.forEach((block) => {
+        block.calculateRenderProperties(this.measuresInfo);
+    });
 
 
   }
