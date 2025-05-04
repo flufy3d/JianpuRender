@@ -374,94 +374,93 @@ export class JianpuBlock {
      * @param measuresInfo Provides context (e.g., allowDottedRests).
      */
     public calculateRenderProperties(measuresInfo: MeasuresInfo): void {
-        // Reset properties
+        // 重置渲染属性
         delete this.durationLines;
         delete this.augmentationDots;
         delete this.augmentationDash;
-
-        // Use override if provided, otherwise use the block's own length
+    
         const blockLength = this.length;
-
-        if (isSafeZero(blockLength) || blockLength < 0) return; // Ignore zero or negative length
-
-
-        // --- Handle Dotted Notes ---
-        // Check for common dotted lengths...
-        const dottedHalf = 3.0;
+        if (isSafeZero(blockLength) || blockLength < 0) return;
+    
+        // 处理附点音符逻辑
         const dottedQuarter = 1.5;
         const dottedEighth = 0.75;
         const dottedSixteenth = 0.375;
-        
-
+        const dottedHalf = 3.0;
+    
         if (measuresInfo.allowDottedRests || this.notes.length > 0) {
-            if (isSafeZero(blockLength - dottedQuarter)) { // Dotted Quarter (1.)
-                this.augmentationDots = 1;
-                // Base note is Quarter (no lines/dashes)
-                return;
-            }
-            if (isSafeZero(blockLength - dottedEighth)) { // Dotted Eighth (0.5 .)
-                this.durationLines = 1; // Base is Eighth
+            if (isSafeZero(blockLength - dottedQuarter)) {
                 this.augmentationDots = 1;
                 return;
             }
-             if (isSafeZero(blockLength - dottedSixteenth)) { // Dotted Sixteenth (0.25 .)
-                this.durationLines = 2; // Base is Sixteenth
+            if (isSafeZero(blockLength - dottedEighth)) {
+                this.durationLines = 1;
                 this.augmentationDots = 1;
                 return;
             }
-             if (isSafeZero(blockLength - dottedHalf)) { // Dotted Half (2 .)
-                 this.augmentationDash = true; // Needs dashes
-                 this.augmentationDots = 1;
-                 // How many dashes? Depends on convention. Let's say 1 dash for half note base.
-                 // Logic below might handle this, or need refinement.
-                 // For now, just mark as dotted.
+            if (isSafeZero(blockLength - dottedSixteenth)) {
+                this.durationLines = 2;
+                this.augmentationDots = 1;
                 return;
-             }
+            }
+            if (isSafeZero(blockLength - dottedHalf)) {
+                this.augmentationDots = 1;
+            }
         }
-
-        // --- Revised Regular Durations and Dashes/Lines ---
-
-        // 1. Determine Base Symbol (Quarter, Half, Whole etc.) and initial lines/dashes
+    
+        // 确定基础音符时值及下划线数量
         let baseLength = 0;
-        if (blockLength >= 4.0 - 1e-6) { // Whole note base (or longer)
+        if (blockLength >= 4.0 - 1e-6) {
             baseLength = 4.0;
-            this.augmentationDash = true;
-            // Dashes = floor(length) - 1. For length 4, dashes=3. Store count in augmentationDots?
-            this.augmentationDots = Math.max(0, Math.floor(blockLength + 1e-6) - 1); // Temporarily store dash count here
-        } else if (blockLength >= 2.0 - 1e-6) { // Half Note base
+        } else if (blockLength >= 2.0 - 1e-6) {
             baseLength = 2.0;
-            this.augmentationDash = true;
-            this.augmentationDots = 1; // 1 dash for half note
-        } else if (blockLength >= 1.0 - 1e-6) { // Quarter Note base
+        } else if (blockLength >= 1.0 - 1e-6) {
             baseLength = 1.0;
-            // No lines/dashes/dots yet
-        } else if (blockLength >= 0.5 - 1e-6) { // Eighth Note base
+        } else if (blockLength >= 0.5 - 1e-6) {
             baseLength = 0.5;
             this.durationLines = 1;
-        } else if (blockLength >= 0.25 - 1e-6) { // Sixteenth Note base
+        } else if (blockLength >= 0.25 - 1e-6) {
             baseLength = 0.25;
             this.durationLines = 2;
-        } else if (blockLength >= 0.125 - 1e-6) { // 32nd Note base
+        } else if (blockLength >= 0.125 - 1e-6) {
             baseLength = 0.125;
             this.durationLines = 3;
-        } else if (blockLength >= 0.0625 - 1e-6) { // 64th Note base
+        } else if (blockLength >= 0.0625 - 1e-6) {
             baseLength = 0.0625;
             this.durationLines = 4;
         } else {
-            // Too short or irregular
-            if (blockLength > 1e-6) {
-                console.warn( /* ... warning message ... */);
-            }
-            this.durationLines = 4; // Render as shortest possible
+            this.durationLines = 4;
             baseLength = 0.0625;
         }
 
-        console.log(baseLength);
-
-
-
+        this.length = baseLength;
+    
+        // 新增的 augmentationDash 逻辑
+        this.augmentationDash = false;
+    
+        // 条件 1: block 中只有一个音符
+        if (this.notes.length === 1) {
+            const currentNote = this.notes[0];
+            // 条件 2 & 3: 存在前一个完整四分音符且音高相同
+            if (currentNote.tiedFrom && 
+                isSafeZero(currentNote.tiedFrom.length - 1.0) && 
+                currentNote.tiedFrom.pitch === currentNote.pitch) {
+                
+                // 条件 4: 后续连接的音符没有跨小节
+                let validNextNote = true;
+                if (currentNote.tiedTo) {
+                    const nextNoteStart = currentNote.start + currentNote.length;
+                    const currentMeasure = Math.floor(measuresInfo.measureNumberAtQ(this.start));
+                    const nextNoteMeasure = Math.floor(measuresInfo.measureNumberAtQ(nextNoteStart));
+                    validNextNote = (currentMeasure === nextNoteMeasure);
+                }
+    
+                if (validNextNote) {
+                    this.augmentationDash = true;
+                }
+            }
+        }
     }
-
 
     /**
      * Splits a block to fit standard musical symbol lengths (lines/dots/dashes).
