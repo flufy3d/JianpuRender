@@ -407,33 +407,25 @@ export class JianpuBlock {
                 this.augmentationDots = 1;
             }
         }
-    
-        // 确定基础音符时值及下划线数量
-        let baseLength = 0;
+
+
         if (blockLength >= 4.0 - 1e-6) {
-            baseLength = 4.0;
+            this.durationLines = 0;
         } else if (blockLength >= 2.0 - 1e-6) {
-            baseLength = 2.0;
+            this.durationLines = 0;
         } else if (blockLength >= 1.0 - 1e-6) {
-            baseLength = 1.0;
+            this.durationLines = 0;
         } else if (blockLength >= 0.5 - 1e-6) {
-            baseLength = 0.5;
             this.durationLines = 1;
         } else if (blockLength >= 0.25 - 1e-6) {
-            baseLength = 0.25;
             this.durationLines = 2;
         } else if (blockLength >= 0.125 - 1e-6) {
-            baseLength = 0.125;
             this.durationLines = 3;
         } else if (blockLength >= 0.0625 - 1e-6) {
-            baseLength = 0.0625;
             this.durationLines = 4;
         } else {
             this.durationLines = 4;
-            baseLength = 0.0625;
         }
-
-        this.length = baseLength;
     
         // 新增的 augmentationDash 逻辑
         this.augmentationDash = false;
@@ -460,6 +452,8 @@ export class JianpuBlock {
                 }
             }
         }
+
+
     }
 
     /**
