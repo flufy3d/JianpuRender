@@ -529,18 +529,47 @@ private drawNotes(
             // let accWidth = acc.getBBox().width;
         }
 
-        // --- Note Number ---
-        const numText = `${note.jianpuNumber}`;
-        const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
-        const numWidth = num.getBBox().width;
-        noteEndX = noteStartX + numWidth; // Number defines the main body width for now
+        let noteWidth = 0;
+        // 如果 augmentationDash 为 true 则画 '-'，否则画音符数字
+        if (augmentationDash) {
+           // 1. Define desired thickness and width for the dash
+           const dashThickness = this.config.noteHeight * 0.1; // How thick the line should be
+           // Let's assume AUGMENTATION_DASH_FACTOR determines the width relative to noteHeight
+           // Make sure AUGMENTATION_DASH_FACTOR is defined and provides a sensible width multiplier (e.g., 0.5, 1.0)
+           const dashWidth = this.config.noteHeight * AUGMENTATION_DASH_FACTOR; // Desired visual length
+
+           // 2. Calculate the horizontal scale needed for the base path ('h 50')
+           const pathOriginalWidth = 50; // Width defined in augmentationDashPath
+           const dashScaleX = dashWidth / pathOriginalWidth;
+
+           // 3. Draw the path element. Set vertical scale to 1 (it's irrelevant for stroke thickness).
+           const dash = drawSVGPath(noteG, augmentationDashPath, noteStartX, 0, dashScaleX, 1);
+
+           // 4. Apply stroke for visibility and thickness
+           //    Use the calculated dashThickness for stroke-width
+           setStroke(dash, this.config.noteColor, dashThickness);
+
+           // 5. Use the calculated dashWidth for layout purposes
+           noteWidth = dashWidth; // Use the intended width, not getBBox which might not account for stroke
+
+           noteEndX = noteStartX + noteWidth; // Update right edge
+
+        } else {
+
+            const numText = `${note.jianpuNumber}`;
+            const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
+            noteWidth = num.getBBox().width;
+            noteEndX = noteStartX + noteWidth; // Number defines the main body width for now
+          
+        }
 
 
         // --- Octave Dots ---
-        const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
-        const dotScale = dotSize / (PATH_SCALE * 0.15);
-        const dotX = noteStartX + numWidth / 2;
-        if (note.octaveDot !== 0) {
+
+        if (note.octaveDot !== 0 && augmentationDash === false) {
+            const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
+            const dotScale = dotSize / (PATH_SCALE * 0.15);
+            const dotX = noteStartX + noteWidth / 2;
             // 修改点间距计算，增加垂直间距
             const dotSpacing = dotSize * 1.5; // 增加点之间的间距
             const baseOffset = this.config.noteHeight * OCTAVE_DOT_OFFSET_FACTOR;
@@ -557,7 +586,7 @@ private drawNotes(
         if (durationLines > 0) {
              const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5; // Start lines below baseline
              const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
-             const lineWidthScale = numWidth / PATH_SCALE; // Scale line width to number width
+             const lineWidthScale = noteWidth / PATH_SCALE; // Scale line width to number width
              for (let i = 0; i < durationLines; i++) {
                  const y = lineYOffset + i * lineSpacing;
                  // Draw relative to noteG's origin (noteStartX)
@@ -566,22 +595,10 @@ private drawNotes(
         }
 
 
-        // --- Augmentation Dash / Dots ---
+        // --- Augmentation Dots ---
          let augmentationX = noteEndX + noteSpacing; // Position after the number
-         if (augmentationDash) {
-            const dashHeight = this.config.noteHeight * 0.1;
-            const dashScaleY = dashHeight / (PATH_SCALE * 0.1);
-            const dashWidth = numWidth * AUGMENTATION_DASH_FACTOR;
-            const dashScaleX = dashWidth / (PATH_SCALE * 0.5); // Dash path width is 50
-            for (let i = 0; i < (block.augmentationDots ?? 1); i++) { // Assume augmentationDots = dash count
-                 // Draw relative to noteG origin
-                 drawSVGPath(noteG, augmentationDashPath, augmentationX - noteStartX, 0, dashScaleX, dashScaleY);
-                 augmentationX += dashWidth + noteSpacing;
-            }
-            
-             noteEndX = augmentationX - noteSpacing; // Update right edge
-         }
-         else if (augmentationDots > 0) { // Dots only if no dash
+
+         if (augmentationDots > 0) { // Dots only if no dash
             const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
             const dotScale = dotSize / (PATH_SCALE * 0.15);
              for (let i = 0; i < augmentationDots; i++) {
@@ -595,34 +612,37 @@ private drawNotes(
 
 
         // --- Ties ---
-         const noteLogicalEndPositionX = noteEndX; // Right edge of this note's visual elements relative to block start 'x'
-         if (note.tiedFrom) {
-             const prevLink = linkedNoteMap.get(note.tiedFrom);
-             if (prevLink) {
-                 const tieStartX = prevLink.xNoteRight * 0.95;
-                 // End tie slightly before the *current* note number starts (relative to block start x)
-                 const tieEndX = noteStartX - noteSpacing;
-                 const tieWidth = tieEndX - tieStartX;
+        if (augmentationDash === false) {
+            const noteLogicalEndPositionX = noteEndX; // Right edge of this note's visual elements relative to block start 'x'
+            if (note.tiedFrom) {
+                const prevLink = linkedNoteMap.get(note.tiedFrom);
+                if (prevLink) {
+                    const tieStartX = prevLink.xNoteRight * 0.95;
+                    // End tie slightly before the *current* note number starts (relative to block start x)
+                    const tieEndX = noteStartX - noteSpacing;
+                    const tieWidth = tieEndX - tieStartX;
+   
+                    const tieY = - this.config.noteHeight * 1.2; // Y position relative to baseline
+                    const tieScaleX = tieWidth / PATH_SCALE * 1.5;
+                    const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 1.5;
+   
+                     if (tieWidth > 1) {
+                        // Draw the tie starting from the end of the *previous* block's note group
+                        drawSVGPath(prevLink.g, tiePath,
+                                    tieStartX - (prevLink.g.getCTM()?.e ?? 0), // Adjust start X relative to prev group's origin
+                                    tieY, tieScaleX, tieScaleY);
+                    }
+                    linkedNoteMap.delete(note.tiedFrom);
+                } else {
+                     console.warn("Missing linked SVG details for tiedFrom note:", note.tiedFrom);
+                }
+            }
+            if (note.tiedTo) {
+               // Store the end position relative to the *start of the block (x)* for the next tie calculation
+                linkedNoteMap.set(note, { g: noteG, xNoteRight: noteLogicalEndPositionX, yNoteBaseline: 0 });
+            }
+        }
 
-                 const tieY = - this.config.noteHeight * 1.2; // Y position relative to baseline
-                 const tieScaleX = tieWidth / PATH_SCALE * 1.5;
-                 const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 1.5;
-
-                  if (tieWidth > 1) {
-                     // Draw the tie starting from the end of the *previous* block's note group
-                     drawSVGPath(prevLink.g, tiePath,
-                                 tieStartX - (prevLink.g.getCTM()?.e ?? 0), // Adjust start X relative to prev group's origin
-                                 tieY, tieScaleX, tieScaleY);
-                 }
-                 linkedNoteMap.delete(note.tiedFrom);
-             } else {
-                  console.warn("Missing linked SVG details for tiedFrom note:", note.tiedFrom);
-             }
-         }
-         if (note.tiedTo) {
-            // Store the end position relative to the *start of the block (x)* for the next tie calculation
-             linkedNoteMap.set(note, { g: noteG, xNoteRight: noteLogicalEndPositionX, yNoteBaseline: 0 });
-         }
 
          maxX = Math.max(maxX, noteEndX); // Update the overall rightmost edge relative to block start 'x'
 
