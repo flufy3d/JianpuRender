@@ -258,7 +258,7 @@ export class JianpuSVGRender {
         }
    
         // 增加yBaseline的值，使乐谱内容下移
-        const verticalPadding = this.config.noteHeight * 0.95; // 增加0.5倍noteHeight的间距
+        const verticalPadding = this.config.noteHeight * 1.65; // 增加noteHeight的间距
         this.mainSVG.setAttribute('width', `${this.width}`);
         this.mainSVG.setAttribute('height', `${this.height}`);
         this.mainG.setAttribute('transform', `translate(0, ${this.yBaseline + verticalPadding})`); // 增加垂直间距
@@ -599,14 +599,14 @@ private drawNotes(
          if (note.tiedFrom) {
              const prevLink = linkedNoteMap.get(note.tiedFrom);
              if (prevLink) {
-                 const tieStartX = prevLink.xNoteRight;
+                 const tieStartX = prevLink.xNoteRight * 0.95;
                  // End tie slightly before the *current* note number starts (relative to block start x)
                  const tieEndX = noteStartX - noteSpacing;
                  const tieWidth = tieEndX - tieStartX;
 
-                 const tieY = this.config.noteHeight * 0.5; // Y position relative to baseline
-                 const tieScaleX = tieWidth / PATH_SCALE;
-                 const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 0.5;
+                 const tieY = - this.config.noteHeight * 1.2; // Y position relative to baseline
+                 const tieScaleX = tieWidth / PATH_SCALE * 1.5;
+                 const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 1.5;
 
                   if (tieWidth > 1) {
                      // Draw the tie starting from the end of the *previous* block's note group

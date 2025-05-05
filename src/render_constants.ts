@@ -25,7 +25,7 @@ export const COMPACT_SPACING_FACTOR = 1.5; // e.g., 1.5 times the note number wi
 export const UNDERLINE_SPACING_FACTOR = 0.2;
 
 /** Vertical offset for octave dots (relative to note height) */
-export const OCTAVE_DOT_OFFSET_FACTOR = 1.15;
+export const OCTAVE_DOT_OFFSET_FACTOR = 1.0;
 
 /** Size of octave/augmentation dots (relative to note height) */
 export const DOT_SIZE_FACTOR = 0.1;
