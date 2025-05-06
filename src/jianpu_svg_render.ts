@@ -477,7 +477,7 @@ export class JianpuSVGRender {
             } else if (block.length < 0.5) { // 对于 8 分音符
                 gap *= 0.4;  // 半间距
             } else if (block.length < 1.0) { // 对于 4 分音符
-                gap *= 0.5;  // 半间距
+                gap *= 0.5;  // 中等间距
             }
             
             // For quarter notes (length 1.0) or longer, the full gap is used.
