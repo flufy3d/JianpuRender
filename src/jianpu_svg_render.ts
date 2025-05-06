@@ -532,8 +532,6 @@ private drawNotes(
         let noteWidth = 0;
         // 如果 augmentationDash 为 true 则画 '-'，否则画音符数字
         if (augmentationDash) {
-           // 1. Define desired thickness and width for the dash
-           const dashThickness = this.config.noteHeight * 0.1; // How thick the line should be
            // Let's assume AUGMENTATION_DASH_FACTOR determines the width relative to noteHeight
            // Make sure AUGMENTATION_DASH_FACTOR is defined and provides a sensible width multiplier (e.g., 0.5, 1.0)
            const dashWidth = this.config.noteHeight * AUGMENTATION_DASH_FACTOR; // Desired visual length
@@ -547,7 +545,7 @@ private drawNotes(
 
            // 4. Apply stroke for visibility and thickness
            //    Use the calculated dashThickness for stroke-width
-           setStroke(dash, this.config.noteColor, dashThickness);
+           setStroke(dash, this.config.noteColor, LINE_STROKE_WIDTH);
 
            // 5. Use the calculated dashWidth for layout purposes
            noteWidth = dashWidth; // Use the intended width, not getBBox which might not account for stroke
@@ -586,13 +584,12 @@ private drawNotes(
         if (durationLines > 0) {
              const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5; // Start lines below baseline
              const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
-             const lineThickness = this.config.noteHeight * 0.1; 
              const lineWidthScale = noteWidth / PATH_SCALE; // Scale line width to number width
              for (let i = 0; i < durationLines; i++) {
                  const y = lineYOffset + i * lineSpacing;
                  // Draw relative to noteG's origin (noteStartX)
                  const durationLine = drawSVGPath(noteG, underlinePath, noteStartX, y, lineWidthScale, 1); // Start line at num's x=0
-                 setStroke(durationLine, this.config.noteColor, lineThickness);
+                 setStroke(durationLine, this.config.noteColor, LINE_STROKE_WIDTH);
              }
         }
 
