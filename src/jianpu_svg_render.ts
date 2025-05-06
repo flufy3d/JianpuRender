@@ -62,7 +62,7 @@ export enum ScrollType {
 export interface JianpuSVGRenderConfig {
   /** Base vertical height in pixels for a standard note number (e.g., '1'). Controls overall scale. */
   noteHeight?: number;
-  /** Horizontal spacing factor in COMPACT mode (multiple of note width). */
+  /** Horizontal spacing factor in COMPACT mode (multiple of note width). This factor determines the base gap *after* a note. */
   noteSpacingFactor?: number;
   /** Pixels per quarter note in PROPORTIONAL mode. 0 or undefined for COMPACT mode. */
   pixelsPerTimeStep?: number;
@@ -461,8 +461,27 @@ export class JianpuSVGRender {
         if (isCompact) {
             // Total width is accumulated width of bar, signature, and content
             blockWidth += contentWidth;
-             // Add standard spacing *after* the content in compact mode
-            blockWidth += this.estimatedNoteWidth * this.config.noteSpacingFactor;
+            
+            // Adjust spacing based on block duration for compact mode
+            let gap = this.estimatedNoteWidth * this.config.noteSpacingFactor;
+            // block.length is in quarter notes.
+            // e.g., 64th note: 0.0625; 32nd note: 0.125; 16th note: 0.25; 8th note: 0.5; quarter note: 1.0
+            if ( block.beatEnd) {
+                gap *= 1.0; // Longer spacing for beat start
+            } else if (block.length < 0.0625) { // 对于 64 分音符或更短的音符
+                gap *= 0.0625; // 极小的间距
+            } else if (block.length < 0.125) { // 对于 32 分音符
+                gap *= 0.125; // 非常小的间距
+            } else if (block.length < 0.25) { // 对于 16 分音符
+                gap *= 0.25; // 小间距
+            } else if (block.length < 1.0) { // 对于 8 分音符
+                gap *= 0.5;  // 半间距
+            }
+            
+            // For quarter notes (length 1.0) or longer, the full gap is used.
+            blockWidth += gap;
+           
+
         } else {
             // Proportional mode: width is determined by the maximum extent of elements at this time
              blockWidth = Math.max(signatureWidth, contentWidth);
@@ -574,7 +593,7 @@ private drawNotes(
             
             for (let i = 0; i < Math.abs(note.octaveDot); i++) {
                 // 使用绝对坐标而非相对坐标
-                const y = (note.octaveDot > 0 ? -baseOffset : baseOffset) - (i * dotSpacing);
+                const y = (note.octaveDot > 0 ? -baseOffset : baseOffset) - (i * dotSpacing * (note.octaveDot > 0 ? 1 : -1) ); // Adjusted y calculation
                 drawSVGPath(noteG, dotPath, dotX, y, dotScale, dotScale);
             }
         }
