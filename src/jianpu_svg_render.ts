@@ -469,12 +469,14 @@ export class JianpuSVGRender {
             if ( block.beatEnd) {
                 gap *= 1.0; // Longer spacing for beat start
             } else if (block.length < 0.0625) { // 对于 64 分音符或更短的音符
-                gap *= 0.0625; // 极小的间距
+                gap *= 0.05; // 极小的间距
             } else if (block.length < 0.125) { // 对于 32 分音符
-                gap *= 0.125; // 非常小的间距
+                gap *= 0.1; // 非常小的间距
             } else if (block.length < 0.25) { // 对于 16 分音符
-                gap *= 0.25; // 小间距
-            } else if (block.length < 1.0) { // 对于 8 分音符
+                gap *= 0.2; // 小间距
+            } else if (block.length < 0.5) { // 对于 8 分音符
+                gap *= 0.4;  // 半间距
+            } else if (block.length < 1.0) { // 对于 4 分音符
                 gap *= 0.5;  // 半间距
             }
             
@@ -600,16 +602,23 @@ private drawNotes(
 
 
         // --- Duration Underlines ---
+        const DURATION_LINE_SCALES = new Map<number, number>([
+            [1, 1.78],
+            [2, 1.6], 
+            [3, 1.3],
+            [4, 1.15]
+        ]);
+
         if (durationLines > 0) {
-             const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5; // Start lines below baseline
-             const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
-             const lineWidthScale = noteWidth / PATH_SCALE; // Scale line width to number width
-             for (let i = 0; i < durationLines; i++) {
-                 const y = lineYOffset + i * lineSpacing;
-                 // Draw relative to noteG's origin (noteStartX)
-                 const durationLine = drawSVGPath(noteG, underlinePath, noteStartX, y, lineWidthScale, 1); // Start line at num's x=0
-                 setStroke(durationLine, this.config.noteColor, LINE_STROKE_WIDTH);
-             }
+            const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5;
+            const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
+            const lineWidthScale = noteWidth / PATH_SCALE * (DURATION_LINE_SCALES.get(durationLines) ?? 1);
+            
+            for (let lineIndex = 0; lineIndex < durationLines; lineIndex++) {
+                const yPosition = lineYOffset + lineIndex * lineSpacing;
+                const durationLine = drawSVGPath(noteG, underlinePath, noteStartX, yPosition, lineWidthScale, 1);
+                setStroke(durationLine, this.config.noteColor, LINE_STROKE_WIDTH);
+            }
         }
 
 
