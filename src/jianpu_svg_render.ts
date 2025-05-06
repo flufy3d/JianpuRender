@@ -586,11 +586,13 @@ private drawNotes(
         if (durationLines > 0) {
              const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5; // Start lines below baseline
              const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
+             const lineThickness = this.config.noteHeight * 0.1; 
              const lineWidthScale = noteWidth / PATH_SCALE; // Scale line width to number width
              for (let i = 0; i < durationLines; i++) {
                  const y = lineYOffset + i * lineSpacing;
                  // Draw relative to noteG's origin (noteStartX)
-                 drawSVGPath(noteG, underlinePath, 0, y, lineWidthScale, 1); // Start line at num's x=0
+                 const durationLine = drawSVGPath(noteG, underlinePath, noteStartX, y, lineWidthScale, 1); // Start line at num's x=0
+                 setStroke(durationLine, this.config.noteColor, lineThickness);
              }
         }
 
