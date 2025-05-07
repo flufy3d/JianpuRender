@@ -18,7 +18,7 @@
 import {
   LINE_STROKE_WIDTH, COMPACT_SPACING_FACTOR, UNDERLINE_SPACING_FACTOR,
   OCTAVE_DOT_OFFSET_FACTOR, DOT_SIZE_FACTOR, AUGMENTATION_DASH_FACTOR,
-  FONT_SIZE_MULTIPLIER, SMALL_FONT_SIZE_MULTIPLIER
+  FONT_SIZE_MULTIPLIER, SMALL_FONT_SIZE_MULTIPLIER, DURATION_LINE_SCALES
 } from './render_constants';
 
 import {
@@ -602,13 +602,6 @@ private drawNotes(
 
 
         // --- Duration Underlines ---
-        const DURATION_LINE_SCALES = new Map<number, number>([
-            [1, 1.78],
-            [2, 1.6], 
-            [3, 1.3],
-            [4, 1.15]
-        ]);
-
         if (durationLines > 0) {
             const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5;
             const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
@@ -701,14 +694,6 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
     noteEndX = currentX + restWidth;
 
      // --- Duration Underlines ---
-
-     const DURATION_LINE_SCALES = new Map<number, number>([
-        [1, 1.78],
-        [2, 1.6], 
-        [3, 1.3],
-        [4, 1.15]
-    ]);
-
     if (durationLines > 0) {
         const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5;
         const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;

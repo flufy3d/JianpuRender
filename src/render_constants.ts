@@ -44,3 +44,11 @@ export const FONT_SIZE_MULTIPLIER = 1.2; // Adjust for good number size
 
 /** Font size multiplier for smaller elements like accidentals, time signatures */
 export const SMALL_FONT_SIZE_MULTIPLIER = 1.0;
+
+
+export const DURATION_LINE_SCALES = new Map<number, number>([
+    [1, 1.78],
+    [2, 1.6], 
+    [3, 1.3],
+    [4, 1.15]
+]);
