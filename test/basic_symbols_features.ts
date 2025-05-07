@@ -79,14 +79,13 @@ for (let n = 1; n < 128; n *= 2) {
 testData[2].data.notes.push(
   { start: position, length: 0.125, pitch: 67, intensity: 127 }
 ); // Completing bar
-/*
+
 testData[3] = {
   title: `Dotted notes`,
   description: `Note length can be extended to a 150% of its nominal value \
-    adding a dot after the note symbol. This applies to all note symbols but \
-    it will not be applied to rests symbols, besides it is not forbidden under \
-    some circumstances, following the classical music transcription chriteria \
-    disrecommending the use of dotted rests in order to ease the readability. \
+    adding a dot after the note symbol. This applies to all number notation \
+    symbols but it will not be applied to rests symbols in jianpu system, \
+    following the simplified notation principles that prioritize readability. \
     Last note is included to make previous rests noticeable.`,
   data: {
     notes: [
@@ -95,7 +94,7 @@ testData[3] = {
     ],
   }
 };
-
+/*
 testData[4] = { // Not required for unitary test but for visual test.
   title: `Treble Clef (G-Clef)`,
   description: `Leftmost symbol (spiral-like) makes five lines pentagram to \
