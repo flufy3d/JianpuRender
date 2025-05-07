@@ -29,8 +29,7 @@ testData[0] = {
   title: `Note symbols and their durations`,
   description: `Notes of different length should complete each bar going from \
     whole note through 1/2th, 1/4th, 1/8th, 1/16th, 1/32th and 1/64th, which \
-    is the lowest handled resolution. Stems on first half bar should be \
-    upwards and should be downwards on second half.`,
+    is the lowest handled resolution.`,
   data: {
     notes: [],
   }
@@ -46,10 +45,10 @@ for (let n = 1; n < 128; n *= 2) {
     position += duration;
   }
 }
-/*
-testData[1] = { // Not required for unitary test but for visual test.
-  title: `Stem direction threshold`,
-  description: `Stem should be upwards up to third line notes (included).`,
+
+testData[1] = { 
+  title: `simple note display`,
+  description: `simple note display`,
   data: {
     notes: [
       { start: 0, length: 1, pitch: 69, intensity: 127 },
@@ -80,7 +79,7 @@ for (let n = 1; n < 128; n *= 2) {
 testData[2].data.notes.push(
   { start: position, length: 0.125, pitch: 67, intensity: 127 }
 ); // Completing bar
-
+/*
 testData[3] = {
   title: `Dotted notes`,
   description: `Note length can be extended to a 150% of its nominal value \

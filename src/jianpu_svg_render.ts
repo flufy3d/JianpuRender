@@ -690,7 +690,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
     const FONT_SIZE = `${this.numberFontSize}px`;
     const noteSpacing = this.estimatedNoteWidth * 0.1;
 
-    const { durationLines = 0, augmentationDots = 0, augmentationDash = false } = block;
+    const { durationLines = 0, augmentationDots = 0} = block;
     let currentX = x; // Position relative to block start
     let noteEndX = currentX; // Track right edge
 
@@ -701,34 +701,30 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
     noteEndX = currentX + restWidth;
 
      // --- Duration Underlines ---
+
+     const DURATION_LINE_SCALES = new Map<number, number>([
+        [1, 1.78],
+        [2, 1.6], 
+        [3, 1.3],
+        [4, 1.15]
+    ]);
+
     if (durationLines > 0) {
-         const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5;
-         const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
-         const lineWidthScale = restWidth / PATH_SCALE;
-         for (let i = 0; i < durationLines; i++) {
-             const y = lineYOffset + i * lineSpacing;
-             // Draw relative to blockGroup origin (0)
-             drawSVGPath(blockGroup, underlinePath, 0, y, lineWidthScale, 1);
-         }
+        const lineYOffset = this.config.noteHeight * UNDERLINE_SPACING_FACTOR * 2.5;
+        const lineSpacing = this.config.noteHeight * UNDERLINE_SPACING_FACTOR;
+        const lineWidthScale = restWidth / PATH_SCALE * (DURATION_LINE_SCALES.get(durationLines) ?? 1);
+        
+        for (let lineIndex = 0; lineIndex < durationLines; lineIndex++) {
+            const yPosition = lineYOffset + lineIndex * lineSpacing;
+            const durationLine = drawSVGPath(blockGroup, underlinePath, currentX, yPosition, lineWidthScale, 1);
+            setStroke(durationLine, this.config.noteColor, LINE_STROKE_WIDTH);
+        }
     }
 
-    // --- Augmentation Dash / Dots ---
+    // --- Augmentation Dots ---
     let augmentationX = noteEndX + noteSpacing;
 
-    if (augmentationDash) {
-        const dashHeight = this.config.noteHeight * 0.1;
-        const dashScaleY = dashHeight / (PATH_SCALE * 0.1);
-        const dashWidth = restWidth * AUGMENTATION_DASH_FACTOR;
-        const dashScaleX = dashWidth / (PATH_SCALE * 0.5);
-        for (let i = 0; i < (block.augmentationDots ?? 1); i++) {
-            // Draw relative to blockGroup origin
-            drawSVGPath(blockGroup, augmentationDashPath, augmentationX - x, 0, dashScaleX, dashScaleY);
-            augmentationX += dashWidth + noteSpacing;
-        }
-
-        noteEndX = augmentationX - noteSpacing;
-    }
-    else if (augmentationDots > 0) {
+    if (augmentationDots > 0) {
         const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
         const dotScale = dotSize / (PATH_SCALE * 0.15);
         for (let i = 0; i < augmentationDots; i++) {
