@@ -623,11 +623,10 @@ private drawNotes(
             const dotScale = dotSize / (PATH_SCALE * 0.15);
              for (let i = 0; i < augmentationDots; i++) {
                  // Draw relative to noteG origin
-                 drawSVGPath(noteG, dotPath, augmentationX - noteStartX, 0, dotScale, dotScale);
+                 drawSVGPath(noteG, dotPath, augmentationX, 0, dotScale, dotScale);
                  augmentationX += dotSize + noteSpacing;
              }
-
-             noteEndX = augmentationX - noteSpacing;
+             noteEndX = augmentationX + noteSpacing;
          }
 
 
@@ -707,18 +706,17 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
     }
 
     // --- Augmentation Dots ---
-    let augmentationX = noteEndX + noteSpacing;
+    let augmentationX = noteEndX + noteSpacing; // Position after the number
 
-    if (augmentationDots > 0) {
+    if (augmentationDots > 0) { // Dots only if no dash
         const dotSize = this.config.noteHeight * DOT_SIZE_FACTOR;
         const dotScale = dotSize / (PATH_SCALE * 0.15);
         for (let i = 0; i < augmentationDots; i++) {
-            // Draw relative to blockGroup origin
-            drawSVGPath(blockGroup, dotPath, augmentationX - x, 0, dotScale, dotScale);
+            // Draw relative to noteG origin
+            drawSVGPath(blockGroup, dotPath, augmentationX, 0, dotScale, dotScale);
             augmentationX += dotSize + noteSpacing;
         }
-
-        noteEndX = augmentationX - noteSpacing;
+        noteEndX = augmentationX + noteSpacing;
     }
 
     return noteEndX - x; // Return the width of the content drawn

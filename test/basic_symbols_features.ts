@@ -90,7 +90,10 @@ testData[3] = {
   data: {
     notes: [
       { start: 0, length: 3, pitch: 67, intensity: 127 },
-      { start: 3.75, length: 0.25, pitch: 67, intensity: 127 }
+      { start: 3.75, length: 0.25, pitch: 67, intensity: 127 },
+      { start: 4, length: 3, pitch: 72, intensity: 127 },
+      { start: 7, length: 0.75, pitch: 74, intensity: 127 },
+      { start: 7.75, length: 0.25, pitch: 72, intensity: 127 }
     ],
   }
 };

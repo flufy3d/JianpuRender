@@ -6,6 +6,9 @@ const demoContainer = document.getElementById('demo-container')!;
 
 // Render all test cases
 testData.forEach((testCase, index) => {
+  // if (index !== 3) {
+  //   return;
+  // }
   // Create case container
   const caseDiv = document.createElement('div');
   caseDiv.className = 'test-case';
