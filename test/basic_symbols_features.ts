@@ -97,15 +97,10 @@ testData[3] = {
     ],
   }
 };
-/*
+
 testData[4] = { // Not required for unitary test but for visual test.
-  title: `Treble Clef (G-Clef)`,
-  description: `Leftmost symbol (spiral-like) makes five lines pentagram to \
-    cover pitches from D3 to G4 touching extreme lines. Higher and lower \
-    pitches are represented using extra lines. C3 is considered "G-Clef lower \
-    bound", even though lower notes can be represented. There's no "upper \
-    bound" and higher notes from A4 can be represented. Once setted in a staff \
-    it cannot be replaced by another Clef.`,
+  title: `Jianpu High-High Pitch Test`,
+  description: `This test is designed to verify the display and handling of high - high pitches in the jianpu system. It includes a series of notes with high - high pitches to ensure the correct representation in the rendering process.`,
   data: {
     notes: [
       { start: 0, length: 1, pitch: 62, intensity: 127 },
@@ -132,13 +127,8 @@ testData[4] = { // Not required for unitary test but for visual test.
 };
 
 testData[5] = { // Not required for unitary test but for visual test.
-  title: `Bass Clef (F-Clef)`,
-  description: `Leftmost symbol (the curved one alongsidewith colon) makes \
-    five lines pentagram to cover pitches from F1 to B2 touching extreme \
-    lines. Higher and lower pitches are represented using extra lines. C3 is \
-    considered "F-Clef upper bound", even though higher notes can be \
-    represented. There's no "lower bound" and lower notes from E1 can be \
-    represented. Once setted in a staff it cannot be replaced by another Clef.`,
+  title: `Test of Jianpu Low-Low Pitch Symbols`,
+  description: `This test is designed to verify the display and handling of low - low pitch symbols in the jianpu system. It includes a series of notes with low - low pitches to ensure the correct representation in the rendering process.`,
   data: {
     notes: [
       { start: 0, length: 1, pitch: 59, intensity: 127 },
@@ -163,7 +153,7 @@ testData[5] = { // Not required for unitary test but for visual test.
     ],
   }
 };
-
+/*
 testData[6] = {
   title: `Sharp Accidentals`,
   description: `Notes can modify their pitch one semitone up using Accidental \

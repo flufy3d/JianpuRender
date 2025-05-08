@@ -590,12 +590,12 @@ private drawNotes(
             const dotScale = dotSize / (PATH_SCALE * 0.15);
             const dotX = noteStartX + noteWidth / 2;
             // 修改点间距计算，增加垂直间距
-            const dotSpacing = dotSize * 1.5; // 增加点之间的间距
+            const dotSpacing = dotSize * 2.8; // 增加点之间的间距
             const baseOffset = this.config.noteHeight * OCTAVE_DOT_OFFSET_FACTOR;
             
             for (let i = 0; i < Math.abs(note.octaveDot); i++) {
                 // 使用绝对坐标而非相对坐标
-                const y = (note.octaveDot > 0 ? -baseOffset : baseOffset) - (i * dotSpacing * (note.octaveDot > 0 ? 1 : -1) ); // Adjusted y calculation
+                const y = (note.octaveDot > 0 ? -baseOffset : baseOffset*0.6) - (i * dotSpacing * (note.octaveDot > 0 ? 1 : -1) ); // Adjusted y calculation
                 drawSVGPath(noteG, dotPath, dotX, y, dotScale, dotScale);
             }
         }
