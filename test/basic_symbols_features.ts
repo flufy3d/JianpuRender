@@ -153,25 +153,10 @@ testData[5] = { // Not required for unitary test but for visual test.
     ],
   }
 };
-/*
+
 testData[6] = {
   title: `Sharp Accidentals`,
-  description: `Notes can modify their pitch one semitone up using Accidental \
-    symbol '#' (called sharp) before a note symbol. Once modified (let's say \
-    G3), all notes in same staff position are modified as well until the end \
-    of current bar. Setting an Accidental at the beginning of a bar instead to \
-    a single note makes it apply all notes of same name (i.e. G3 and G4) to \
-    this and following bars. This is called Key Signature and resets previous \
-    Key Signatures, if any. There is a Normal Symbol to anule active \
-    note Accidental of following notes until the end of bar, where there would \
-    be a Key Signature re-activation. Double sharp and similar Accidentals are \
-    not covered and will be represented as next note if applicable. Following \
-    score shows a Key Signature and some notes, in order, unaltered, sharp, \
-    sharp (no need for Accidental symbol), sharp (in other scale, needing for \
-    sharp symbol again), normal (back to unaltered), sharp (in ither scale \
-    again with no need for Accidental), unaltered, sharp again, end of bar \
-    with Accidentals reset (except the ones from key signature), sharp and, \
-    finally, sharp (applying key signature to same name note in other scale).`,
+  description: `In jianpu notation, notes can raise their pitch by one semitone using the accidental symbol '#' (called sharp) placed before a note symbol. Once a note (for example, G3) is modified in this way, all notes in the same staff position will also be modified until the end of the current bar. If an accidental is set at the beginning of a bar instead of being applied to a single note, it will affect all notes with the same name (such as G3 and G4) in this and subsequent bars. This is known as a Key Signature, and it will reset any previous key signatures. There is a normal symbol that can cancel the active note accidental for the following notes until the end of the bar, at which point the key signature will be re - activated. Double sharps and similar accidentals are not covered and will be represented as the next note if applicable. The following score shows a key signature and a series of notes in the order of unaltered, sharp, sharp (no need for an accidental symbol), sharp (in another scale, requiring the sharp symbol again), normal (returning to the unaltered state), sharp (in another scale again with no need for an accidental), unaltered, sharp again, end of the bar with accidentals reset (except those from the key signature), sharp, and finally, sharp (applying the key signature to a note of the same name in another scale).`,
   data: {
     keySignatures: [ { start: 0, key: 7 } ],
     notes: [
@@ -189,12 +174,10 @@ testData[6] = {
   }
 };
 
+
 testData[7] = {
   title: `Flat Accidentals`,
-  description: `Notes can modify their pitch one semitone down using \
-    Accidental symbol 'b' (called flat) before a note symbol. Same rules apply \
-    as in Sharp Accidentals scenario. Double flat is not covered either. \
-    Similar pattern has been used on score`,
+  description: `This section demonstrates the flat accidentals in jianpu notation. Notes can lower their pitch by one semitone using the accidental symbol 'b' (called flat) placed before a note symbol. The same rules apply as in the Sharp Accidentals scenario. Double flats are not covered either. A similar pattern has been used in the score.`,
   data: {
     keySignatures: [ { start: 0, key: 5 } ],
     notes: [
@@ -212,6 +195,7 @@ testData[7] = {
   }
 };
 
+/*
 testData[8] = {
   title: `Key Signatures on chromatic scales`,
   description: `There is a close set of 12 Key Signatures. Half of them use \
