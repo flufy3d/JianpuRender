@@ -214,58 +214,106 @@ import {
       }
   }
   
-  /**
-   * Maps a MIDI pitch to its Jianpu representation (number, octave dots, accidental)
-   * relative to a given key signature (tonic).
-   * @param midiPitch The MIDI pitch number (e.g., 60 = Middle C).
-   * @param key The key signature tonic (0=C, 1=Db/C#, ..., 11=B).
-   * @returns Object containing { jianpuNumber (1-7), octaveDot, accidental (0=none, 1=#, 2=b, 3=natural) }.
-   */
-  export function mapMidiToJianpu(midiPitch: number, key: number): {
+
+/**
+ * Maps a MIDI pitch to its Jianpu representation (number, octave dots, accidental)
+ * relative to a given key signature (tonic).
+ * @param midiPitch The MIDI pitch number (e.g., 60 = Middle C).
+ * @param key The key signature tonic (0=C, 1=Db/C#, ..., 11=B).
+ * @returns Object containing { jianpuNumber (1-7), octaveDot, accidental (0=none, 1=#, 2=b, 3=natural is not used by this func) }.
+ */
+export function mapMidiToJianpu(midiPitch: number, key: number): {
     jianpuNumber: number;
     octaveDot: number;
     accidental: number;
   } {
-    // tonicMidiRef: MIDI pitch of the tonic (1) of the key, in the octave used as reference for "no octave dots".
-    // e.g., C Major (key 0): C4 (60). G Major (key 7): G3 (55). F Major (key 5): F3 (53).
     const keyPitchClass = key % 12;
     let tonicMidiRef = MIDDLE_C_MIDI + keyPitchClass;
-    if (keyPitchClass > (MIDDLE_C_MIDI % 12)) { // MIDDLE_C_MIDI % 12 is 0. True for any key other than C.
+    // Adjust tonicMidiRef to be the tonic in the octave typically represented with no dots
+    // For C major, tonicMidiRef is C4. For G major, G3. For F major, F3 etc.
+    if (keyPitchClass > (MIDDLE_C_MIDI % 12)) { // MIDDLE_C_MIDI % 12 is 0 (C)
         tonicMidiRef -= 12;
     }
   
-    // tonicMidi: The tonic of the key, adjusted to be in the same octave as the input midiPitch.
-    const octaveOffset = Math.round((midiPitch - tonicMidiRef) / 12);
-    const tonicMidi = tonicMidiRef + octaveOffset * 12;
+    // tonicMidi: The tonic of the key, adjusted to be in an octave close to the input midiPitch
+    // This helps in calculating the interval within a single octave.
+    const octaveOffsetForIntervalCalc = Math.round((midiPitch - tonicMidiRef) / 12);
+    const tonicMidi = tonicMidiRef + octaveOffsetForIntervalCalc * 12;
   
     // Interval in semitones from the octave-adjusted tonic to the midiPitch.
     const interval = (midiPitch - tonicMidi + 12) % 12;
   
     let jianpuNumber = MAJOR_SCALE_INTERVALS[interval];
-    let accidental = 0; // 0:none, 1:#, 2:b, 3:natural
+    let accidental = 0; // 0:none, 1:#, 2:b
   
     if (jianpuNumber === undefined) { // Note is chromatic relative to the major scale of the key
-        const lowerInterval = (interval - 1 + 12) % 12;
-        const upperInterval = (interval + 1 + 12) % 12;
-        const lowerDegree = MAJOR_SCALE_INTERVALS[lowerInterval];
-        const upperDegree = MAJOR_SCALE_INTERVALS[upperInterval];
+        // interval is the chromatic semitone distance from the tonic of the current key.
+        // e.g. in C major (tonic C): C# is interval 1, Eb is interval 3, etc.
+        // MAJOR_SCALE_INTERVALS maps diatonic intervals from tonic to jianpu degrees (1-7)
+        // e.g. MAJOR_SCALE_INTERVALS[0] is 1 (Do), MAJOR_SCALE_INTERVALS[4] is 3 (Mi)
   
-        if (lowerDegree !== undefined) {
-            jianpuNumber = lowerDegree;
-            accidental = 1; // sharp
-        } else if (upperDegree !== undefined) {
-            jianpuNumber = upperDegree;
-            accidental = 2; // flat
-        } else {
-            // This case should be rare (e.g. note is a double sharp/flat from a diatonic note)
-            console.warn(`Could not determine Jianpu number for MIDI ${midiPitch}, interval ${interval} from tonic in key ${key}. Defaulting to 1#.`);
-            jianpuNumber = 1;
-            accidental = 1;
+        switch (interval) {
+            case 1: // e.g., C# in C major (1 semitone above tonic)
+                // Prefer C# (Do sharp) over Db (Re flat)
+                jianpuNumber = MAJOR_SCALE_INTERVALS[0]; // Jianpu degree of the note it's sharpening (tonic)
+                accidental = 1; // sharp
+                break;
+            case 3: // e.g., Eb in C major (3 semitones above tonic)
+                // Prefer Eb (Mi flat) over D# (Re sharp)
+                jianpuNumber = MAJOR_SCALE_INTERVALS[4]; // Jianpu degree of the note it's flatting (major third)
+                accidental = 2; // flat
+                break;
+            case 6: // e.g., F# in C major (6 semitones above tonic)
+                // Prefer F# (Fa sharp) over Gb (So flat)
+                jianpuNumber = MAJOR_SCALE_INTERVALS[5]; // Jianpu degree of the note it's sharpening (perfect fourth)
+                accidental = 1; // sharp
+                break;
+            case 8: // e.g., Ab in C major (8 semitones above tonic)
+                // Prefer Ab (La flat) over G# (So sharp)
+                jianpuNumber = MAJOR_SCALE_INTERVALS[9]; // Jianpu degree of the note it's flatting (major sixth)
+                accidental = 2; // flat
+                break;
+            case 10: // e.g., Bb in C major (10 semitones above tonic)
+                // Prefer Bb (Ti flat) over A# (La sharp)
+                jianpuNumber = MAJOR_SCALE_INTERVALS[11]; // Jianpu degree of the note it's flatting (major seventh)
+                accidental = 2; // flat
+                break;
+            default:
+                // This case should ideally not be reached if `interval` is truly chromatic (1,3,6,8,10)
+                // and MAJOR_SCALE_INTERVALS is well-defined.
+                // As a fallback, try the original logic's sharp preference.
+                console.warn(`Unexpected chromatic interval ${interval} in mapMidiToJianpu. Defaulting to sharp of lower valid degree.`);
+                const lowerIntervalFallback = (interval - 1 + 12) % 12;
+                const upperIntervalFallback = (interval + 1 + 12) % 12;
+                const lowerDegreeFallback = MAJOR_SCALE_INTERVALS[lowerIntervalFallback];
+                const upperDegreeFallback = MAJOR_SCALE_INTERVALS[upperIntervalFallback];
+  
+                if (lowerDegreeFallback !== undefined) {
+                    jianpuNumber = lowerDegreeFallback;
+                    accidental = 1; // sharp
+                } else if (upperDegreeFallback !== undefined) {
+                    jianpuNumber = upperDegreeFallback;
+                    accidental = 2; // flat
+                } else {
+                    // Extremely unlikely fallback if MAJOR_SCALE_INTERVALS is sparse.
+                    jianpuNumber = 1; // Default to 1#
+                    accidental = 1;
+                    console.error(`Could not determine Jianpu number components for MIDI ${midiPitch}, interval ${interval} from tonic in key ${key}.`);
+                }
+                break;
+        }
+  
+        // Final check: jianpuNumber should be defined after the switch if interval was one of 1,3,6,8,10
+        // and MAJOR_SCALE_INTERVALS has entries for 0,4,5,9,11.
+        if (jianpuNumber === undefined) {
+             console.error(`Jianpu number became undefined for MIDI ${midiPitch} (interval ${interval}, key ${key}) after chromatic processing. This indicates a logic error or misconfigured MAJOR_SCALE_INTERVALS.`);
+             // Provide a very basic fallback to prevent crashes, though this state is erroneous.
+             jianpuNumber = 1;
+             accidental = 1; // Default to 1#
         }
     }
-    // If jianpuNumber is defined, the note is diatonic to the major scale, so accidental remains 0.
   
-    // Octave dots are relative to the tonicMidiRef (the "no dots" reference octave).
+    // Octave dots are relative to the tonicMidiRef (the "no dots" reference octave for the current key's tonic).
     const octaveDot = Math.floor((midiPitch - tonicMidiRef) / 12);
     
     return {

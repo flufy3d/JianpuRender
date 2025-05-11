@@ -176,7 +176,7 @@ testData[6] = {
 
 
 testData[7] = {
-  title: `Flat Accidentals in Jianpu`, 
+  title: `Flat Accidentals`, 
   description: `Similar to sharp accidentals, the flat symbol 'b' in jianpu only applies to the single note it directly precedes. This differs from staff notation where accidentals affect all subsequent same-pitch notes in the measure.`,
   data: {
     keySignatures: [ { start: 0, key: 5 } ],
