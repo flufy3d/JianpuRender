@@ -32,7 +32,7 @@ const naturalPath = `M 45,5 v 45 M 65,0 v 45 H 45 m 20,10 H 45`; // Simple natur
 // Using null for 0, and potentially text symbols instead of paths.
 export const ACCIDENTAL_PATHS = [null, sharpPath, flatPath, naturalPath];
 /** Accidental text symbols */
-export const ACCIDENTAL_TEXT = ['', '#', 'b', '♮'];
+export const ACCIDENTAL_TEXT = ['', '#', 'b'];
 
 // --- Lines and Dots ---
 /** Bar line (simple vertical line) */

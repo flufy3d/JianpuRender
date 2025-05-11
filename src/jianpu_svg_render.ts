@@ -419,7 +419,7 @@ export class JianpuSVGRender {
        // --- 1. Draw Bar Line (if needed) ---
        // Bar lines are drawn *before* the block they precede.
        if (isMeasureStart && block.start > 1e-6) { // Don't draw bar at time 0
-           const barX = x - (isCompact ? this.estimatedNoteWidth * 0.2 : 2); // Position slightly before block
+           const barX = x - (isCompact ? this.estimatedNoteWidth * 0.6 : 4); // Position slightly before block
            // Adjust bar height based on estimated content height or fixed value
            const barHeight = this.config.noteHeight * 2; // Example height
            const barY = 0; // Center bar vertically around baseline
@@ -544,10 +544,11 @@ private drawNotes(
         if (note.accidental !== 0) {
             const accText = ACCIDENTAL_TEXT[note.accidental];
             // Position accidental slightly before the number
-            drawSVGText(noteG, accText, noteStartX - noteSpacing, 0, SMALL_FONT_SIZE, 'normal', 'end', 'middle', this.config.noteColor);
+            drawSVGText(noteG, accText, noteStartX + noteSpacing, 0, SMALL_FONT_SIZE, 'normal', 'end', 'text-top', this.config.noteColor);
             // We don't advance noteStartX here, accidental sits to the left
             // We do need its width to potentially adjust overall block spacing later if needed.
-            // let accWidth = acc.getBBox().width;
+            //let accWidth = acc.getBBox().width;
+
         }
 
         let noteWidth = 0;

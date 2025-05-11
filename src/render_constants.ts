@@ -43,7 +43,7 @@ export const AUGMENTATION_SPACING_FACTOR = 0.2;
 export const FONT_SIZE_MULTIPLIER = 1.2; // Adjust for good number size
 
 /** Font size multiplier for smaller elements like accidentals, time signatures */
-export const SMALL_FONT_SIZE_MULTIPLIER = 1.0;
+export const SMALL_FONT_SIZE_MULTIPLIER = 0.75;
 
 
 export const DURATION_LINE_SCALES = new Map<number, number>([
