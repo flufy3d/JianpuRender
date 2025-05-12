@@ -433,9 +433,15 @@ export class JianpuBlock {
         // 条件 1: block 中只有一个音符
         if (this.notes.length === 1) {
             const currentNote = this.notes[0];
-            // 条件 2 & 3: 存在前一个完整四分音符且音高相同
+            const timeSignature = measuresInfo.timeSignatureAtQ(this.start);
+            if (!timeSignature) return;
+            
+            // 根据拍号获取基本节拍单位
+            const beatLength = 4 / timeSignature.denominator;
+            
+            // 条件 2 & 3: 存在前一个完整基本节拍单位音符且音高相同
             if (currentNote.tiedFrom && 
-                isSafeZero(currentNote.tiedFrom.length - 1.0) && 
+                isSafeZero(currentNote.tiedFrom.length - beatLength) && 
                 currentNote.tiedFrom.pitch === currentNote.pitch) {
                 
                 // 条件 4: 后续连接的音符没有跨小节

@@ -195,7 +195,7 @@ testData[7] = {
   }
 };
 
-/*
+
 testData[8] = {
   title: `Key Signatures on chromatic scales`,
   description: `There is a close set of 12 Key Signatures. Half of them use \
@@ -232,6 +232,7 @@ for (let n = 0; n < 12; ++n) {
     );
   }
 }
+
 
 testData[9] = {
   title: `Time Signatures`,
@@ -283,7 +284,7 @@ testData[10] = {
     ]
   }
 };
-
+/*
 testData[11] = {
   title: `Ties`,
   description: `Notes longer than avilable note symbols length can be achieved \
