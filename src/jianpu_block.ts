@@ -436,13 +436,17 @@ export class JianpuBlock {
             const timeSignature = measuresInfo.timeSignatureAtQ(this.start);
             if (!timeSignature) return;
             
-            // 根据拍号获取基本节拍单位
-            const beatLength = 4 / timeSignature.denominator;
+            // 根据拍号获取基本节拍单位 最小到四分音符长度
+            const beatLength = Math.max(4 / timeSignature.denominator, 1.0);
             
+            const isFirstBlock = this.measureNumber % 1 <=  1e-6; // 使用小节号判断更准确
+
+
             // 条件 2 & 3: 存在前一个完整基本节拍单位音符且音高相同
-            if (currentNote.tiedFrom && 
+            if (!isFirstBlock && currentNote.tiedFrom && 
                 isSafeZero(currentNote.tiedFrom.length - beatLength) && 
-                currentNote.tiedFrom.pitch === currentNote.pitch) {
+                currentNote.tiedFrom.pitch === currentNote.pitch &&
+                currentNote.length >= 1.0) {
                 
                 // 条件 4: 后续连接的音符没有跨小节
                 let validNextNote = true;
@@ -450,7 +454,8 @@ export class JianpuBlock {
                     const nextNoteStart = currentNote.start + currentNote.length;
                     const currentMeasure = Math.floor(measuresInfo.measureNumberAtQ(this.start));
                     const nextNoteMeasure = Math.floor(measuresInfo.measureNumberAtQ(nextNoteStart));
-                    validNextNote = (currentMeasure === nextNoteMeasure);
+                    validNextNote = (currentMeasure === nextNoteMeasure) && 
+                                  (currentNote.tiedTo.length >= 1.0); // 新增条件：下一个note不小于四分音符长度
                 }
     
                 if (validNextNote) {

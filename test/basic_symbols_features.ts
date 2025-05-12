@@ -284,7 +284,7 @@ testData[10] = {
     ]
   }
 };
-/*
+
 testData[11] = {
   title: `Ties`,
   description: `Notes longer than avilable note symbols length can be achieved \
@@ -298,4 +298,3 @@ testData[11] = {
     ],
   }
 };
-*/
