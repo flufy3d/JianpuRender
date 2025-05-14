@@ -670,7 +670,10 @@ private drawNotes(
                 let current = firstNote;
                 while (current && current !== note) {
                     linkedNoteMap.delete(current);
-                    current = current.tiedTo;
+                    const nextNote = current.tiedTo;
+                    if (nextNote) {
+                        current = nextNote;
+                    }
                 }
             } else {
                 console.warn("Missing linked SVG details for first tied note:", firstNote);
