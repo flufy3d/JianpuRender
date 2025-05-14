@@ -178,11 +178,15 @@ export class JianpuBlock {
                 // Preserve ties from the note being replaced
                 if (this.notes[i].tiedFrom) {
                     jianpuNote.tiedFrom = this.notes[i].tiedFrom;
-                    jianpuNote.tiedFrom.tiedTo = jianpuNote; // Relink previous
+                    if (jianpuNote.tiedFrom) {
+                        jianpuNote.tiedFrom.tiedTo = jianpuNote; // Relink previous
+                    }
                 }
                  if (this.notes[i].tiedTo) {
                     jianpuNote.tiedTo = this.notes[i].tiedTo;
-                    jianpuNote.tiedTo.tiedFrom = jianpuNote; // Relink next
+                    if (jianpuNote.tiedTo) {
+                        jianpuNote.tiedTo.tiedFrom = jianpuNote; // Relink next
+                    }
                 }
                 this.notes[i] = jianpuNote; // Replace
                 replacedDuplicate = true;
