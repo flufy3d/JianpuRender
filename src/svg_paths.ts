@@ -42,6 +42,6 @@ export const underlinePath = 'm 0,0 h 100'; // Width 100, at y=0
 /** Augmentation Dash (simple horizontal line) */
 export const augmentationDashPath = 'm 0,0 h 50'; // Width 50, at y=0 (adjust width as needed)
 /** Tie/Slur Path (basic curve) */
-export const tiePath = `M 0,10 C 25,-10 75,-10 100,10 C 75,-20 25,-20 0,10 Z`; // Basic arc below baseline
+export const tiePath = `M -13,5 C 15,-15 65,-15 90,5 C 65,-25 15,-25 -13,5 Z`;  // Basic arc below baseline
 /** Dot Path (circle for octave/augmentation) */
 export const dotPath = 'M 0 0 a 15 15 0 1 0 0.0001 0 z'; // Circle centered at 0,0, radius 15

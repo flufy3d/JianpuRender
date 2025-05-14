@@ -632,36 +632,51 @@ private drawNotes(
 
 
         // --- Ties ---
-        if (augmentationDash === false) {
-            const noteLogicalEndPositionX = noteEndX; // Right edge of this note's visual elements relative to block start 'x'
-            if (note.tiedFrom) {
-                const prevLink = linkedNoteMap.get(note.tiedFrom);
-                if (prevLink) {
-                    const tieStartX = prevLink.xNoteRight * 0.95;
-                    // End tie slightly before the *current* note number starts (relative to block start x)
-                    const tieEndX = noteStartX - noteSpacing;
-                    const tieWidth = tieEndX - tieStartX;
-   
-                    const tieY = - this.config.noteHeight * 1.2; // Y position relative to baseline
-                    const tieScaleX = tieWidth / PATH_SCALE * 1.5;
-                    const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 1.5;
-   
-                     if (tieWidth > 1) {
-                        // Draw the tie starting from the end of the *previous* block's note group
-                        drawSVGPath(prevLink.g, tiePath,
-                                    tieStartX - (prevLink.g.getCTM()?.e ?? 0), // Adjust start X relative to prev group's origin
-                                    tieY, tieScaleX, tieScaleY);
-                    }
-                    linkedNoteMap.delete(note.tiedFrom);
-                } else {
-                     console.warn("Missing linked SVG details for tiedFrom note:", note.tiedFrom);
-                }
+
+        const noteLogicalEndPositionX = noteEndX;
+        if (note.tiedTo && !augmentationDash) {
+            // 存储当前note信息，等待后续绘制
+            linkedNoteMap.set(note, { g: noteG, xNoteRight: noteLogicalEndPositionX, yNoteBaseline: 0 });
+        } else if (note.tiedFrom) {
+            // 递归查找链接的第一个note
+            let firstNote = note.tiedFrom;
+            while (firstNote.tiedFrom) {
+                firstNote = firstNote.tiedFrom;
             }
-            if (note.tiedTo) {
-               // Store the end position relative to the *start of the block (x)* for the next tie calculation
-                linkedNoteMap.set(note, { g: noteG, xNoteRight: noteLogicalEndPositionX, yNoteBaseline: 0 });
+            
+            const prevLink = linkedNoteMap.get(firstNote);
+            if (prevLink) {
+                const tieStartX = prevLink.xNoteRight * 1.0;
+                //const tieEndX = noteStartX - noteSpacing;
+                const tieEndX = augmentationDash ? 
+                (noteStartX - this.estimatedNoteWidth * 2.2) :
+                (noteStartX - noteSpacing);
+
+
+                const tieWidth = tieEndX - tieStartX;
+
+
+                const tieY = - this.config.noteHeight * 1.2;
+                const tieScaleX = tieWidth / PATH_SCALE * 1.3;
+                const tieScaleY = (this.config.noteHeight / PATH_SCALE) * 1.6;
+
+                if (tieWidth > 1) {
+                    // 从第一个note到当前note绘制tie
+                    drawSVGPath(prevLink.g, tiePath,
+                                tieStartX - (prevLink.g.getCTM()?.e ?? 0),
+                                tieY, tieScaleX, tieScaleY);
+                }
+                // 清除整个链接链的缓存
+                let current = firstNote;
+                while (current && current !== note) {
+                    linkedNoteMap.delete(current);
+                    current = current.tiedTo;
+                }
+            } else {
+                console.warn("Missing linked SVG details for first tied note:", firstNote);
             }
         }
+
 
 
          maxX = Math.max(maxX, noteEndX); // Update the overall rightmost edge relative to block start 'x'
