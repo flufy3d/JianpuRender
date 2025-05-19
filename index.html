@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>JianpuRender 演示索引</title>
+    <style>
+        body {
+            font-family: Arial, "Microsoft Yahei", sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+        .demo-list {
+            list-style: none;
+            padding: 0;
+        }
+        .demo-item {
+            margin: 1.5rem 0;
+            padding: 1.2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .demo-item:hover {
+            transform: translateY(-3px);
+        }
+        .demo-link {
+            text-decoration: none;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .demo-desc {
+            color: #666;
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+        }
+        h1 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>JianpuRender 功能演示</h1>
+    <ul class="demo-list">
+        <li class="demo-item">
+            <a href="basic_symbols.html" class="demo-link">基础符号演示</a>
+            <p class="demo-desc">展示简谱基本符号渲染能力，包括音符、休止符、调号、拍号等核心元素</p>
+        </li>
+        <li class="demo-item">
+            <a href="active_notes.html" class="demo-link">动态音符演示</a>
+            <p class="demo-desc">交互式乐谱演示，支持音符高亮、播放控制及音频同步功能</p>
+        </li>
+        <li class="demo-item">
+            <a href="svg_tools_test.html" class="demo-link">SVG 工具测试</a>
+            <p class="demo-desc">底层 SVG 绘图工具的功能验证，包含路径绘制、动画效果等基础能力测试</p>
+        </li>
+    </ul>
+</body>
+</html>
