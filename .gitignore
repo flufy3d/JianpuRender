@@ -10,10 +10,6 @@ dist/
 
 # Docs-specific files
 !docs/**/*.js
-
-# 添加这行以允许demos目录下的JS文件
-!demos/**/*.js
-
 # Yarn / npm package handling
 node_modules/
 yarn-error.log
