@@ -35,15 +35,30 @@ pnpm add jianpurender
 ```
 
 ```typescript
-import { createRenderer } from 'jianpurender';
+import { JianpuSVGRender } from 'jianpurender';
 
-const renderer = createRenderer({
-  container: '#score-container',
-  width: 800,
-  fontSize: 16
-});
+// 初始化容器
+const container = document.getElementById('score-container')! as HTMLDivElement;
 
-renderer.render('1=C4/4 1 2 3 4 | 5 6 7 i');
+// 创建渲染实例
+const renderer = new JianpuSVGRender(
+  {
+    notes: [
+      { start: 0, length: 1, pitch: 60 },
+      { start: 1, length: 1, pitch: 62 },
+      { start: 2, length: 1, pitch: 64 },
+      { start: 3, length: 1, pitch: 65 },
+      { start: 4, length: 1, pitch: 67 },
+      { start: 5, length: 1, pitch: 69 },
+      { start: 6, length: 1, pitch: 71 },
+      { start: 7, length: 1, pitch: 72 }
+    ],
+    keySignatures: [{ start: 0, key: 0 }],
+    timeSignatures: [{ start: 0, numerator: 4, denominator: 4 }]
+  },
+  { noteHeight: 24 },
+  container
+);
 ```
 
 ## 开发指南
