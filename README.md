@@ -22,9 +22,9 @@
 
 ## 在线演示
 
-<mcurl name="基础符号演示" url="https://flufy3d.github.io/JianpuRender/basic_symbols.html"></mcurl>  
-<mcurl name="动态音符演示" url="https://flufy3d.github.io/JianpuRender/active_notes.html"></mcurl>  
-<mcurl name="SVG工具测试" url="https://flufy3d.github.io/JianpuRender/svg_tools_test.html"></mcurl>
+[基础符号演示](https://flufy3d.github.io/JianpuRender/basic_symbols.html)  
+[动态音符演示](https://flufy3d.github.io/JianpuRender/active_notes.html)  
+[SVG工具测试](https://flufy3d.github.io/JianpuRender/svg_tools_test.html)
 
 ## 快速开始
 
@@ -72,14 +72,14 @@ yarn demo:serve
    yarn test-and-build
    ```
 2. 新功能开发需配套测试用例
-3. API变更需更新<mcfolder name="类型声明文件" path="/node/index.d.ts"></mcfolder>
-4. 文档更新同步至<mcfolder name="API文档" path="/docs/"></mcfolder>
+3. API变更需更新`/node/index.d.ts`文件
+4. 文档更新同步至`/docs/`目录
 
 ## 技术栈
 
-<mcsymbol name="SVG绘图引擎" filename="svg_tools.ts" path="src/svg_tools.ts" startline="15" type="function"></mcsymbol>  
-<mcsymbol name="乐谱解析器" filename="jianpu_model.ts" path="src/jianpu_model.ts" startline="42" type="class"></mcsymbol>  
-<mcsymbol name="渲染管线" filename="jianpu_svg_render.ts" path="src/jianpu_svg_render.ts" startline="89" type="function"></mcsymbol>
+- SVG绘图引擎：`src/svg_tools.ts`
+- 乐谱解析器：`src/jianpu_model.ts`
+- 渲染管线：`src/jianpu_svg_render.ts`
 
 ![测试覆盖率](https://img.shields.io/badge/coverage-85%25-brightgreen)
 
