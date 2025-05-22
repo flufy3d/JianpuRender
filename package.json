@@ -1,6 +1,6 @@
 {
   "name": "jianpurender",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Render music score using SVG on browsers.",
   "main": "node/index.js",
   "module": "es6/index.js",
@@ -8,10 +8,10 @@
   "jsdelivr": "dist/jianpurender.js",
   "unpkg": "dist/jianpurender.js",
   "dependencies": {
-    "gh-pages": "^6.3.0",
     "path-browserify": "^1.0.1"
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "@types/tape": "^4.2.32",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
