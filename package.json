@@ -1,6 +1,6 @@
 {
   "name": "jianpurender",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Render music score using SVG on browsers.",
   "main": "node/index.js",
   "module": "es6/index.js",
@@ -54,5 +54,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/flufy3d/jianpurender.git"
-  }
+  },
+  "keywords": [
+    "jianpu",
+    "music",
+    "notation",
+    "music-score",
+    "typescript"
+  ]
 }
