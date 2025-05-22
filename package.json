@@ -1,6 +1,6 @@
 {
   "name": "jianpurender",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Render music score using SVG on browsers.",
   "main": "node/index.js",
   "module": "es6/index.js",

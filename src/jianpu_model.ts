@@ -278,7 +278,7 @@ export function mapMidiToJianpu(midiPitch: number, key: number): {
                 jianpuNumber = MAJOR_SCALE_INTERVALS[11]; // Jianpu degree of the note it's flatting (major seventh)
                 accidental = 2; // flat
                 break;
-            default:
+            default: {
                 // This case should ideally not be reached if `interval` is truly chromatic (1,3,6,8,10)
                 // and MAJOR_SCALE_INTERVALS is well-defined.
                 // As a fallback, try the original logic's sharp preference.
@@ -301,6 +301,7 @@ export function mapMidiToJianpu(midiPitch: number, key: number): {
                     console.error(`Could not determine Jianpu number components for MIDI ${midiPitch}, interval ${interval} from tonic in key ${key}.`);
                 }
                 break;
+            }
         }
   
         // Final check: jianpuNumber should be defined after the switch if interval was one of 1,3,6,8,10
