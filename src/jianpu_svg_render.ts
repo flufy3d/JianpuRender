@@ -131,6 +131,24 @@ export class JianpuSVGRender {
   private yBaseline: number; // Vertical position for the number baseline
 
 
+    /**
+     * 解析多种格式的颜色字符串为有效的CSS颜色值
+     * @param colorStr 颜色字符串，支持格式："blue"、"rgb(255,165,0)"、"255,165,0"
+     * @returns 标准化的CSS颜色字符串
+     */
+    private parseColorString(colorStr: string): string {
+        // 如果是CSS颜色名称或rgb()格式，直接返回
+        if (/^[a-z]+$/i.test(colorStr) || colorStr.startsWith('rgb(')) {
+            return colorStr;
+        }
+        // 处理"255,165,0"格式
+        if (/^\d+,\s*\d+,\s*\d+$/.test(colorStr)) {
+            return `rgb(${colorStr})`;
+        }
+        return colorStr; // 默认返回原字符串
+    }
+
+
   /**
    * `JianpuSVGRender` constructor.
    * @param score The `JianpuInfo` to visualize.
@@ -152,8 +170,8 @@ export class JianpuSVGRender {
       noteHeight: config.noteHeight ?? defaultNoteHeight,
       noteSpacingFactor: config.noteSpacingFactor ?? COMPACT_SPACING_FACTOR,
       pixelsPerTimeStep: config.pixelsPerTimeStep ?? defaultPixelsPerTimeStep,
-      noteColor: config.noteColor ?? 'black',
-      activeNoteColor: config.activeNoteColor ?? 'red',
+      noteColor: this.parseColorString(config.noteColor ?? 'black'),
+      activeNoteColor: this.parseColorString(config.activeNoteColor ?? 'red'),
       defaultKey: config.defaultKey ?? 0, // Default to C Major
       scrollType: config.scrollType ?? ScrollType.PAGE,
       fontFamily: config.fontFamily ?? 'sans-serif',
