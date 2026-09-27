@@ -44,6 +44,8 @@ export interface JianpuNote extends NoteInfo {
   tiedFrom?: JianpuNote;
   /** Reference to following tied note */
   tiedTo?: JianpuNote;
+  /** Lyric syllable attached to this note (undefined when the note carries no lyric) */
+  lyric?: string;
 
 }
 
@@ -68,6 +70,9 @@ export function splitJianpuNote(jianpuNote: JianpuNote, quarters: number): Jianp
   const remainLength = originalEnd - quarters;
   jianpuNote.length = quarters - jianpuNote.start; // Modify original note
 
+  // Note: the new object literal deliberately does NOT copy `lyric` (nor
+  // `accidental`), so a lyric attached before the split stays on the first
+  // (earlier-starting) part and is never repeated on the continuation part.
   const splitted: JianpuNote = {
       start: quarters,
       length: remainLength,

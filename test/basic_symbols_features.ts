@@ -56,6 +56,12 @@ testData[1] = {
       { start: 2, length: 1, pitch: 72, intensity: 127 },
       { start: 3, length: 1, pitch: 74, intensity: 127 }
     ],
+    lyrics: [
+      { start: 0, text: 'la' },
+      { start: 1, text: 'si' },
+      { start: 2, text: 'do' },
+      { start: 3, text: 're' }
+    ],
   }
 };
 

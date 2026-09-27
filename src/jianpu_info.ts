@@ -53,10 +53,20 @@ export interface TimeSignatureInfo {
   denominator: number;
 }
 
+/** Stores a lyric syllable attached to the note sounding at its start time */
+export interface LyricInfo {
+  /** Starting time, in quarter note quantities (float). The note covering this time gets the lyric. */
+  start: number;
+  /** Lyric text (a syllable or word) */
+  text: string;
+}
+
 /** Stores the bare minimal information related to a full single Jianpu score */
 export interface JianpuInfo {
   /** All notes in the score. There's no need to be sorted by start q */
   notes: NoteInfo[];
+  /** All lyric syllables in the score. They will be attached to the notes sounding at their start q. There's no need to be sorted by start q */
+  lyrics?: LyricInfo[];
   /** All tempo changes in the score. They will get sorted by start q */
   tempos?: TempoInfo[];
   /** All key signature changes in the score. They will get sorted by start q */

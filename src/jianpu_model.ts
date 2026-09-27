@@ -16,7 +16,7 @@
  */
 
 import {
-    JianpuInfo, NoteInfo, KeySignatureInfo,
+    JianpuInfo, NoteInfo, KeySignatureInfo, LyricInfo,
     DEFAULT_TEMPO, DEFAULT_TIME_SIGNATURE, DEFAULT_KEY_SIGNATURE
   } from './jianpu_info';
   import { MeasuresInfo } from './measure_info';
@@ -105,18 +105,31 @@ import {
       if (jianpuInfo.timeSignatures[0].start > 1e-6) {
            jianpuInfo.timeSignatures.unshift({...DEFAULT_TIME_SIGNATURE, start: 0});
       }
-  
+
+      // Unlike notes/tempos/keySignatures/timeSignatures above (which are
+      // sorted in place, an existing behavior), lyrics are sorted on a copy so
+      // the user's input array keeps its original order. The sorted copy is
+      // only used locally for lyric-to-note attachment.
+      const sortedLyrics = jianpuInfo.lyrics ?
+          [...jianpuInfo.lyrics].sort((a, b) => a.start - b.start) : [];
+
       this.measuresInfo = new MeasuresInfo(jianpuInfo, this.lastQ);
-      this.infoToBlocks();
+      this.infoToBlocks(sortedLyrics);
     }
   
     /**
     * Converts raw NoteInfo into structured JianpuBlocks.
     * Handles note grouping, rests, and basic splitting.
+    * @param sortedLyrics Lyrics sorted by start (a copy, see `update`). Used
+    *        to attach lyric syllables to the notes sounding at their start.
     */
-    private infoToBlocks(): void {
+    private infoToBlocks(sortedLyrics: LyricInfo[] = []): void {
       const rawBlocks = new Map<number, JianpuBlock>();
       let lastNoteEndTime = 0;
+      // Advancing cursor into sortedLyrics: notes are visited in ascending
+      // start order, so each lyric only needs to be considered once (O(n+m)
+      // instead of a full scan per note).
+      const lyricCursor = { index: 0 };
   
       this.jianpuInfo.notes.forEach(note => {
           const noteStart = note.start;
@@ -132,6 +145,10 @@ import {
   
           const keySignatureKey = this.measuresInfo.keySignatureAtQ(noteStart);
           const jianpuNote = this.createJianpuNote(note, keySignatureKey);
+          const lyric = this.nextLyricForNote(note, sortedLyrics, lyricCursor);
+          if (lyric) {
+              jianpuNote.lyric = lyric.text;
+          }
   
           let block = rawBlocks.get(noteStart);
           if (!block) {
@@ -199,6 +216,53 @@ import {
     }
   
     /**
+     * Finds the first lyric whose start falls within the note's sounding
+     * interval `[note.start, note.start + note.length)` (1e-6 tolerance on
+     * both bounds) and advances the shared cursor past it, so each lyric can
+     * be attached at most once. Chord notes share the same start: the first
+     * note processed (the first in the user's notes array, as the sort is
+     * stable) takes the lyric and the cursor moves on, so the remaining chord
+     * members stay lyric-free. Lyrics falling in rest gaps, outside the score
+     * or beyond a note's end are skipped here or discarded by the cursor on a
+     * later note.
+     *
+     * Attachment happens BEFORE any beat/measure splitting (notes are split
+     * later in `infoToBlocks`'s processing queue), so a lyric landing mid-note
+     * ends up on the FIRST segment after `splitJianpuNote` cleaves the note
+     * (the split part never receives the `lyric` field — see
+     * `splitJianpuNote`).
+     * @param note The raw NoteInfo currently being converted.
+     * @param sortedLyrics Lyrics sorted by start.
+     * @param cursor Shared advancing index into `sortedLyrics`.
+     * @returns The matching LyricInfo, or null when none fits this note.
+     */
+     private nextLyricForNote(
+        note: NoteInfo,
+        sortedLyrics: LyricInfo[],
+        cursor: { index: number }
+     ): LyricInfo | null {
+        const epsilon = 1e-6;
+        // Discard lyrics starting before this note: they fell into a rest gap
+        // or before the score, and can never match this or any later note
+        // (notes are visited in ascending start order).
+        while (cursor.index < sortedLyrics.length &&
+               sortedLyrics[cursor.index].start < note.start - epsilon) {
+            cursor.index++;
+        }
+        const lyric = sortedLyrics[cursor.index];
+        if (!lyric) return null;
+        // Half-open interval with tolerance: a lyric exactly at the note end
+        // (or within epsilon below it) belongs to the following note, not this
+        // one.
+        if (lyric.start >= note.start - epsilon &&
+            lyric.start < note.start + note.length - epsilon) {
+            cursor.index++;
+            return lyric;
+        }
+        return null;
+    }
+
+     /**
      * Converts a raw NoteInfo into a JianpuNote, calculating the
      * Jianpu number, octave dots, and accidental based on key context.
      * @param note The raw NoteInfo.

@@ -45,6 +45,11 @@ export const FONT_SIZE_MULTIPLIER = 1.2; // Adjust for good number size
 /** Font size multiplier for smaller elements like accidentals, time signatures */
 export const SMALL_FONT_SIZE_MULTIPLIER = 0.75;
 
+/** Vertical offset of the lyric line below the note number baseline
+ *  (relative to config.noteHeight). Sits in the gap under the duration
+ *  underlines (which start at noteHeight * 0.5). */
+export const LYRIC_OFFSET_FACTOR = 1.55;
+
 
 export const DURATION_LINE_SCALES = new Map<number, number>([
     [1, 1.78],

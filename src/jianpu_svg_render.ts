@@ -18,7 +18,8 @@
 import {
   LINE_STROKE_WIDTH, COMPACT_SPACING_FACTOR, UNDERLINE_SPACING_FACTOR,
   OCTAVE_DOT_OFFSET_FACTOR, DOT_SIZE_FACTOR, AUGMENTATION_DASH_FACTOR,
-  FONT_SIZE_MULTIPLIER, SMALL_FONT_SIZE_MULTIPLIER, DURATION_LINE_SCALES
+  FONT_SIZE_MULTIPLIER, SMALL_FONT_SIZE_MULTIPLIER, DURATION_LINE_SCALES,
+  LYRIC_OFFSET_FACTOR
 } from './render_constants';
 
 import {
@@ -715,6 +716,27 @@ private drawNotes(
              }
              noteEndX = augmentationX + noteSpacing;
          }
+
+
+        // --- Lyric ---
+        // Drawn under the note number (in the gap below the duration
+        // underlines). Continuation segments of augmentation dashes and other
+        // tied continuations (note.tiedFrom set) carry no lyric: the syllable
+        // stays on the first segment of the tie chain. Rest blocks never
+        // reach this loop (drawRest has no lyric handling).
+        if (note.lyric && !note.tiedFrom) {
+            const lyricY = this.config.noteHeight * LYRIC_OFFSET_FACTOR;
+            const lyricCenterX = noteStartX + noteWidth / 2;
+            const lyricText = drawSVGText(noteG, note.lyric, lyricCenterX, lyricY, SMALL_FONT_SIZE, 'normal', 'middle', 'middle', this.config.noteColor, 1, this.config.fontFamily);
+            // A lyric can be wider than its note: widen the note's right edge
+            // so the following note is spaced after the lyric instead of
+            // overlapping it.
+            const lyricWidth = lyricText.getBBox().width;
+            const lyricRightX = lyricCenterX + lyricWidth / 2;
+            if (lyricRightX > noteEndX) {
+                noteEndX = lyricRightX;
+            }
+        }
 
 
         // --- Ties ---
