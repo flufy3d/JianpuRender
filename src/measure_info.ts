@@ -50,124 +50,166 @@ export interface MeasureInfo {
   timeChange?: boolean;
 }
 
+/** A change event with its start snapped to the resolution grid, ready to become a chunk boundary. */
+interface SnappedChange<T> {
+  /** Where the change starts applying (in quarter notes, snapped to MIN_RESOLUTION) */
+  start: number;
+  /** The original change event from the score info */
+  event: T;
+}
+
 /**
  * Provides a framework for MeasureInfo indexing and fast traversing in order to
- * locate the structural info related to any note. It currently stores the info
- * in chunks based on the minimum resolution.
+ * locate the structural info related to any note. It stores the info in sparse
+ * chunks that only start at the points where a tempo, key signature or time
+ * signature change takes effect (plus the initial chunk at time 0), so the
+ * amount of stored chunks stays independent from the score length. The chunk
+ * applying to any time is located with a binary search, and the measure number
+ * is extrapolated linearly from the chunk start.
  */
 export class MeasuresInfo {
-  /** Internal storage of structural chunks. */
+  /** Internal storage of structural chunks, sorted by ascending start time. */
   private measuresInfo: MeasureInfo[];
   /** Flag to define dotted rests configuration (may change in a future). */
   public allowDottedRests?: boolean = true; // Default to allowing dotted rests in Jianpu
 
   /**
    * Fills the reference info (measure, tempo, time signature and key signature)
-   * in a per-chunk array as a fast method to further fill details in blocks.
+   * into a sparse chunk array holding one chunk per change point, as a fast
+   * method to further fill details in blocks.
    * @param jianpuInfo The score information to get references from.
    * @param lastQ The end time (in quarter notes) of the score.
    */
   constructor (jianpuInfo: JianpuInfo, lastQ: number) {
     this.measuresInfo = [];
+    if (!(lastQ > 0)) return; // No duration to cover: keep the array empty, the getters fall back to defaults.
+
+    // Change events sorted by start (in copies, the given score info is not
+    // mutated) and with their starts snapped to the resolution grid: changes
+    // take effect at the closest resolution step within MIN_RESOLUTION / 2.
+    const tempoChanges = MeasuresInfo.getSortedChanges(jianpuInfo.tempos, DEFAULT_TEMPO);
+    const keyChanges = MeasuresInfo.getSortedChanges(jianpuInfo.keySignatures, DEFAULT_KEY_SIGNATURE);
+    const timeChanges = MeasuresInfo.getSortedChanges(jianpuInfo.timeSignatures, DEFAULT_TIME_SIGNATURE);
+
     let tempoIndex = 0;
     let keyIndex = 0;
     let timeIndex = 0;
-    let currentTempo = jianpuInfo.tempos[0];
-    let currentKeySignature = jianpuInfo.keySignatures[0];
-    let currentTimeSignature = jianpuInfo.timeSignatures[0];
+    let currentTempo = tempoChanges[0].event;
+    let currentKeySignature = keyChanges[0].event;
+    let currentTimeSignature = timeChanges[0].event;
 
     // Start numbering measures from 1, handle potential anacrusis later if needed
     let measureNumberAtCurrentTimeSignature = 1;
     let currentMeasureLength = getMeasureLength(currentTimeSignature);
     let timeOfLastTimeSigChange = currentTimeSignature.start;
 
-    // Calculate resolution step
-    const resolutionStep = MIN_RESOLUTION; // Use the defined minimum resolution
+    // New chunks start at time 0 and at every change point before the score end
+    const boundaries: number[] = [0];
+    tempoChanges.forEach(change => boundaries.push(change.start));
+    keyChanges.forEach(change => boundaries.push(change.start));
+    timeChanges.forEach(change => boundaries.push(change.start));
+    boundaries.sort((a, b) => a - b);
 
-    for (let quarters = 0; quarters < lastQ; quarters += resolutionStep) {
-      // Calculate current measure number
-      const timeSinceLastSigChange = quarters - timeOfLastTimeSigChange;
-      const measuresPassedSinceSigChange = timeSinceLastSigChange / currentMeasureLength;
-      const currentMeasureNumber = measureNumberAtCurrentTimeSignature + measuresPassedSinceSigChange;
+    let previousBoundary = -1;
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i];
+      if (boundary >= lastQ) break; // Sorted boundaries: changes at or after the end never apply
+      if (boundary === previousBoundary) continue; // Several changes share this start point
+      previousBoundary = boundary;
 
-      const measureInfo: MeasureInfo = {
-        start: quarters,
-        measureNumber: currentMeasureNumber,
-        measureLength: currentMeasureLength,
-        tempo: currentTempo,
-        keySignature: currentKeySignature,
-        timeSignature: currentTimeSignature
-      };
+      let tempoChange = false;
+      let keyChange = false;
+      let timeChange = false;
 
       // Check for Tempo Change
-      if (
-        tempoIndex < jianpuInfo.tempos.length &&
-        Math.abs(jianpuInfo.tempos[tempoIndex].start - quarters) < resolutionStep / 2 // Check proximity
-      ) {
-        currentTempo = jianpuInfo.tempos[tempoIndex++];
-        measureInfo.tempo = currentTempo;
-        measureInfo.tempoChange = true;
+      while (tempoIndex < tempoChanges.length && tempoChanges[tempoIndex].start <= boundary) {
+        currentTempo = tempoChanges[tempoIndex++].event;
+        tempoChange = true;
       }
 
       // Check for Key Signature Change
-      if (
-        keyIndex < jianpuInfo.keySignatures.length &&
-        Math.abs(jianpuInfo.keySignatures[keyIndex].start - quarters) < resolutionStep / 2
-      ) {
-        currentKeySignature = jianpuInfo.keySignatures[keyIndex++];
-        measureInfo.keySignature = currentKeySignature;
-        measureInfo.keyChange = true;
+      while (keyIndex < keyChanges.length && keyChanges[keyIndex].start <= boundary) {
+        currentKeySignature = keyChanges[keyIndex++].event;
+        keyChange = true;
       }
 
       // Check for Time Signature Change
-      if (
-        timeIndex < jianpuInfo.timeSignatures.length &&
-        Math.abs(jianpuInfo.timeSignatures[timeIndex].start - quarters) < resolutionStep / 2
-      ) {
-        // Recalculate measure number at the point of change *before* updating
-        const timeAtChange = jianpuInfo.timeSignatures[timeIndex].start;
+      while (timeIndex < timeChanges.length && timeChanges[timeIndex].start <= boundary) {
+        // Recalculate measure number at the point of change *before* updating,
+        // measuring the elapsed time from the raw event start (the previous
+        // per-step version anchored the elapsed time the same way)
+        const timeAtChange = timeChanges[timeIndex].event.start;
         const timeSincePrevSigChange = timeAtChange - timeOfLastTimeSigChange;
         measureNumberAtCurrentTimeSignature += timeSincePrevSigChange / currentMeasureLength;
         // Ensure it aligns reasonably (might need floor/ceil depending on anacrusis handling)
         measureNumberAtCurrentTimeSignature = Math.round(measureNumberAtCurrentTimeSignature * 1000) / 1000;
 
-
-        currentTimeSignature = jianpuInfo.timeSignatures[timeIndex++];
-        measureInfo.timeSignature = currentTimeSignature;
+        currentTimeSignature = timeChanges[timeIndex++].event;
         currentMeasureLength = getMeasureLength(currentTimeSignature);
-        measureInfo.measureLength = currentMeasureLength;
-        measureInfo.measureNumber = measureNumberAtCurrentTimeSignature; // Start new measure numbering
-        measureInfo.timeChange = true;
-        timeOfLastTimeSigChange = measureInfo.start; // Update time of last change
+        timeOfLastTimeSigChange = boundary;
+        timeChange = true;
       }
 
+      // Measure numbering is continuous: extrapolate from the last time
+      // signature anchor. At a change boundary this is exactly the anchor.
+      const measureInfo: MeasureInfo = {
+        start: boundary,
+        measureNumber: measureNumberAtCurrentTimeSignature +
+          (boundary - timeOfLastTimeSigChange) / currentMeasureLength,
+        measureLength: currentMeasureLength,
+        tempo: currentTempo,
+        keySignature: currentKeySignature,
+        timeSignature: currentTimeSignature
+      };
+      if (tempoChange) measureInfo.tempoChange = true;
+      if (keyChange) measureInfo.keyChange = true;
+      if (timeChange) measureInfo.timeChange = true;
       this.measuresInfo.push(measureInfo);
     }
   }
 
-  /** Finds the index in the measuresInfo array for a given time */
+  /**
+   * Returns the given change events sorted by start (in a copy, the given
+   * array is not mutated) with their starts snapped to the resolution grid and
+   * clamped to 0, so every change applies at its closest chunk start. A single
+   * default event is used when the array is missing or empty.
+   * @param events The change events from the score info (optional).
+   * @param fallback The default event to use when there is none.
+   */
+  private static getSortedChanges<T extends {start: number}>(
+    events: T[] | undefined, fallback: T
+  ): SnappedChange<T>[] {
+    const sorted = (events && events.length) ? events.slice() : [fallback];
+    sorted.sort((a, b) => a.start - b.start);
+    return sorted.map(event => {
+      return {
+        start: Math.max(0, Math.round(event.start / MIN_RESOLUTION) * MIN_RESOLUTION),
+        event: event
+      };
+    });
+  }
+
+  /**
+   * Finds the index in the measuresInfo array of the chunk covering a given
+   * time, with a binary search over the chunk start times.
+   */
   private findIndex(start: number): number {
-      // Since chunks are created at MIN_RESOLUTION steps, we can estimate the index
-      const estimatedIndex = Math.max(0, Math.min(this.measuresInfo.length - 1, Math.floor(start / MIN_RESOLUTION)));
-
-      // TODO: Could add refinement here if exact start times don't always align perfectly
-      // For now, assume the estimated index is close enough.
-      // If start times can be arbitrary, a binary search would be more robust:
-      // let low = 0, high = this.measuresInfo.length - 1;
-      // while (low <= high) {
-      //   const mid = Math.floor((low + high) / 2);
-      //   if (this.measuresInfo[mid].start <= start) {
-      //     if (mid === this.measuresInfo.length - 1 || this.measuresInfo[mid + 1].start > start) {
-      //       return mid;
-      //     }
-      //     low = mid + 1;
-      //   } else {
-      //     high = mid - 1;
-      //   }
-      // }
-      // return 0; // Should not happen if start >= 0
-
-      return estimatedIndex;
+    // Binary search for the last chunk starting at or before 'start': it is
+    // the one applying to that time (chunks are sorted by start, and the
+    // stored values extrapolate linearly from each chunk start).
+    let low = 0;
+    let high = this.measuresInfo.length - 1;
+    let found = 0;
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      if (this.measuresInfo[mid].start <= start) {
+        found = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return found;
   }
 
 
