@@ -1,0 +1,37 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# OIDC trusted publishing：npmjs.com 上已把本 workflow 配置为 trusted publisher，
+# 无需任何 NPM_TOKEN secret
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      # trusted publishing 要求 npm >= 11.5.1
+      - name: Ensure npm >= 11.5.1
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Lint, test and build
+        run: npm run test-and-build
+
+      - name: Publish to npm
+        run: npm publish --provenance
