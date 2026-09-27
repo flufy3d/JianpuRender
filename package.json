@@ -7,6 +7,12 @@
   "types": "node/index.d.ts",
   "jsdelivr": "dist/jianpurender.js",
   "unpkg": "dist/jianpurender.js",
+  "files": [
+    "es5",
+    "es6",
+    "node",
+    "dist"
+  ],
   "dependencies": {
     "path-browserify": "^1.0.1"
   },

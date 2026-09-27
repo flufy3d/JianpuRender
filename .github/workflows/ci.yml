@@ -1,0 +1,37 @@
+# =============================================================================
+# CI 质量门禁
+#
+# 每次 push 到 main 以及所有 pull request 都会执行 lint + test + build，
+# 保证进入主干的改动始终是绿的。
+#
+# 注意：npm 发布不走本 workflow，发布流程见 .github/workflows/publish.yml
+# （由 v* tag 触发，Trusted Publishing 方式推送到 npm）。
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Lint, test and build
+        run: npm run test-and-build
