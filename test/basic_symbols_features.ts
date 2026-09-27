@@ -46,7 +46,7 @@ for (let n = 1; n < 128; n *= 2) {
   }
 }
 
-testData[1] = { 
+testData[1] = {
   title: `simple note display`,
   description: `simple note display`,
   data: {
@@ -62,6 +62,7 @@ testData[1] = {
       { start: 2, text: 'do' },
       { start: 3, text: 're' }
     ],
+    tempos: [ { start: 0, qpm: 96 } ],
   }
 };
 

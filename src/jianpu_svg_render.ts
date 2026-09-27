@@ -83,6 +83,11 @@ export interface JianpuSVGRenderConfig {
   height?: number;
   /** Whether to draw the measure (bar) number centered above each measure-start bar line. Default false. */
   showBarNumbers?: boolean;
+  /** Whether to draw tempo markings as "♩=qpm" after the key/time signatures at
+   *  the start of the score, and inline at every tempo change within the score.
+   *  Default false. Note: the quarter-note glyph (♩, U+2669) is written as plain
+   *  text and relies on the browser's font fallback to render. */
+  showTempoMarking?: boolean;
 }
 
 /** Internal structure to track visual elements tied together (e.g., across blocks). */
@@ -124,6 +129,7 @@ export class JianpuSVGRender {
   private isScrolling: boolean;
   private currentKey: number;
   private currentTimeSignature: TimeSignatureInfo;
+  private currentTempoQpm: number;
   private playingNotes: Map<string, NoteInfo>; // Map key: `${start}-${pitch}`
   private lastRenderedQ: number; // Track the last quarter note time rendered
   private estimatedNoteWidth: number; // Estimated width of a basic number for spacing
@@ -186,12 +192,14 @@ export class JianpuSVGRender {
       width: config.width ?? 0, // Auto-width by default
       height: config.height ?? 0, // Auto-height by default
       showBarNumbers: config.showBarNumbers ?? false,
+      showTempoMarking: config.showTempoMarking ?? false,
     };
 
      // --- Initial Model Creation ---
     this.jianpuModel = new JianpuModel(this.jianpuInfo, this.config.defaultKey);
     this.currentKey = this.jianpuModel.measuresInfo.keySignatureAtQ(0);
     this.currentTimeSignature = this.jianpuModel.measuresInfo.timeSignatureAtQ(0) ?? DEFAULT_TIME_SIGNATURE;
+    this.currentTempoQpm = this.jianpuModel.measuresInfo.tempoAtQ(0);
 
 
     // --- Initialize State & Layout ---
@@ -273,7 +281,8 @@ export class JianpuSVGRender {
     // Initial signature setup
     this.currentKey = this.jianpuModel.measuresInfo.keySignatureAtQ(0);
     this.currentTimeSignature = this.jianpuModel.measuresInfo.timeSignatureAtQ(0) ?? DEFAULT_TIME_SIGNATURE;
-    this.drawSignatures(this.overlayG, 0, true, true); // Draw initial signatures in overlay
+    this.currentTempoQpm = this.jianpuModel.measuresInfo.tempoAtQ(0);
+    this.drawSignatures(this.overlayG, 0, true, true, this.config.showTempoMarking); // Draw initial signatures in overlay
     this.updateLayout(); // Set initial sizes
   }
 
@@ -547,13 +556,16 @@ export class JianpuSVGRender {
 
        // --- 2. Draw Signatures (if changed, in-line only) ---
        // Overlay handles the *current* signature. This draws changes *within* the score flow.
+       // Each signature kind is drawn independently: only the ones that changed
+       // at this block start get drawn (e.g. a tempo change alone draws just "♩=qpm").
        const keyChanged = this.updateCurrentKey(block.start);
        const timeChanged = this.updateCurrentTimeSignature(block.start);
+       const tempoChanged = this.updateCurrentTempo(block.start);
        let signatureWidth = 0;
-       if ((keyChanged || timeChanged) && block.start > 1e-6) {
+       if ((keyChanged || timeChanged || tempoChanged) && block.start > 1e-6) {
             // Draw the new signature(s) in the signaturesG (scrollable part)
             const sigX = x + blockWidth; // Position it after potential bar line
-            signatureWidth = this.drawSignatures(this.signaturesG, sigX, keyChanged, timeChanged);
+            signatureWidth = this.drawSignatures(this.signaturesG, sigX, keyChanged, timeChanged, tempoChanged);
             if (isCompact) {
                  blockWidth += signatureWidth + this.estimatedNoteWidth * 0.2; // Add width and spacing
             }
@@ -884,13 +896,15 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
    * @param x The starting x position.
    * @param drawKey Draw the key signature (1=X).
    * @param drawTime Draw the time signature (X/Y).
+   * @param drawTempo Draw the tempo marking (♩=qpm) after the time signature.
    * @returns The width of the drawn signatures.
    */
    private drawSignatures(
        container: SVGGElement,
        x: number,
        drawKey: boolean,
-       drawTime: boolean
+       drawTime: boolean,
+       drawTempo = false
    ): number {
        let currentX = x;
        const spacing = this.estimatedNoteWidth * 0.3; // Spacing between elements
@@ -922,6 +936,27 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
                 this.config.fontFamily
             );
             currentX += timeSig.getBBox().width + spacing;
+       }
+
+       // --- Tempo Marking (e.g., ♩=96) ---
+       // The quarter-note glyph (U+2669) is written as plain text and relies on
+       // the browser's font fallback for display.
+       if (drawTempo) {
+            const tempoStr = `♩=${this.currentTempoQpm}`;
+            const tempoSig = drawSVGText(
+                container,
+                tempoStr,
+                currentX,
+                0,  // 保持与基线对齐
+                timeFontSize,
+                'normal',
+                'start',
+                'middle',  // 垂直居中
+                this.config.noteColor,
+                1,
+                this.config.fontFamily
+            );
+            currentX += tempoSig.getBBox().width + spacing;
        }
 
        const totalWidth = currentX - x;
@@ -967,6 +1002,16 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
                          newTimeSig.denominator !== this.currentTimeSignature.denominator))
       {
           this.currentTimeSignature = newTimeSig;
+          return true;
+      }
+      return false;
+  }
+
+  /** Updates the current tempo if changed at the given time */
+  private updateCurrentTempo(timeQ: number): boolean {
+      const newTempo = this.jianpuModel.measuresInfo.tempoAtQ(timeQ, true); // Check for exact change
+      if (newTempo !== -1 && newTempo !== this.currentTempoQpm) {
+          this.currentTempoQpm = newTempo;
           return true;
       }
       return false;
@@ -1022,6 +1067,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
         const scrolledTimeQ = this.pixelsToTime(scrollLeft);
         const keyAtScroll = this.jianpuModel.measuresInfo.keySignatureAtQ(scrolledTimeQ);
         const timeSigAtScroll = this.jianpuModel.measuresInfo.timeSignatureAtQ(scrolledTimeQ) ?? this.currentTimeSignature;
+        const tempoAtScroll = this.jianpuModel.measuresInfo.tempoAtQ(scrolledTimeQ);
 
         let needsRedraw = false;
         if (keyAtScroll !== this.currentKey) {
@@ -1033,10 +1079,14 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
              this.currentTimeSignature = timeSigAtScroll;
              needsRedraw = true;
          }
+         if (tempoAtScroll !== this.currentTempoQpm) {
+             this.currentTempoQpm = tempoAtScroll;
+             needsRedraw = true;
+         }
 
         if (needsRedraw) {
             while (this.overlayG.lastChild) this.overlayG.removeChild(this.overlayG.lastChild);
-            this.drawSignatures(this.overlayG, 0, true, true);
+            this.drawSignatures(this.overlayG, 0, true, true, this.config.showTempoMarking);
             // Blinking logic on scroll update
              if (scrollLeft < 10 && this.config.pixelsPerTimeStep > 0) {
                   setBlinkAnimation(this.overlayG, true); this.signaturesBlinking = true;
