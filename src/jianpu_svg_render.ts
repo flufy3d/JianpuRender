@@ -81,6 +81,8 @@ export interface JianpuSVGRenderConfig {
   width?: number;
    /** Explicitly set the height of the SVG container */
   height?: number;
+  /** Whether to draw the measure (bar) number centered above each measure-start bar line. Default false. */
+  showBarNumbers?: boolean;
 }
 
 /** Internal structure to track visual elements tied together (e.g., across blocks). */
@@ -183,6 +185,7 @@ export class JianpuSVGRender {
       fontFamily: config.fontFamily ?? 'sans-serif',
       width: config.width ?? 0, // Auto-width by default
       height: config.height ?? 0, // Auto-height by default
+      showBarNumbers: config.showBarNumbers ?? false,
     };
 
      // --- Initial Model Creation ---
@@ -514,6 +517,31 @@ export class JianpuSVGRender {
            if (isCompact) {
                 blockWidth += LINE_STROKE_WIDTH; // Add bar width if compact
            }
+       }
+
+       // --- 1b. Draw Bar Number (optional) ---
+       // Drawn centered above the bar line position. Unlike the bar line
+       // itself, the number is also drawn for the first measure at time 0
+       // (which has no bar line): there it is left-aligned to the block
+       // start so it stays inside the SVG. Per engraving convention bar
+       // numbers do not participate in the block width calculation.
+       if (this.config.showBarNumbers && isMeasureStart) {
+           const isTimeZero = block.start <= 1e-6;
+           const barX = x - (isCompact ? this.estimatedNoteWidth * 0.6 : 4); // Same x as the bar line
+           const barNumberY = -this.config.noteHeight * 2.2; // Above the octave dots (highest ~ -1.9 * noteHeight)
+           drawSVGText(
+               this.musicG,
+               String(Math.round(block.measureNumber)), // Integer part is the measure number
+               isTimeZero ? x : barX,
+               barNumberY,
+               `${this.smallFontSize}px`,
+               'normal',
+               isTimeZero ? 'start' : 'middle',
+               'middle',
+               this.config.noteColor,
+               1,
+               this.config.fontFamily
+           );
        }
 
 

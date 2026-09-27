@@ -19,5 +19,5 @@ testData.forEach((testCase, index) => {
 
   // Render notation
   const jianpuContainer = document.getElementById(`case-${index}`)! as HTMLDivElement;
-  new JianpuSVGRender(testCase.data, {}, jianpuContainer);
+  new JianpuSVGRender(testCase.data, { showBarNumbers: true }, jianpuContainer);
 });
