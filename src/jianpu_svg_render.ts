@@ -88,6 +88,8 @@ export interface JianpuSVGRenderConfig {
    *  Default false. Note: the quarter-note glyph (♩, U+2669) is written as plain
    *  text and relies on the browser's font fallback to render. */
   showTempoMarking?: boolean;
+  /** Called when a rendered note is clicked. Receives the note data and its SVG group. */
+  onNoteClick?: (note: JianpuNote, element: SVGGElement) => void;
 }
 
 /** Internal structure to track visual elements tied together (e.g., across blocks). */
@@ -138,6 +140,11 @@ export class JianpuSVGRender {
   // Hot-path element caches (avoid full-tree querySelector on every highlighted note)
   private noteGroupCache: Map<string, SVGGElement>; // Key: noteId `${start}-${pitch}`
   private blockGroupCache: Map<string, SVGGElement>; // Key: `${block.start}`
+
+  // Click-delegation map: noteId `${start}-${pitch}` → the JianpuNote drawn
+  // into the note group carrying that data-id. Filled in drawNotes, cleared
+  // whenever the SVG structure is rebuilt (clear) or released (destroy).
+  private noteById: Map<string, JianpuNote>;
 
   // Layout & Scaling
   private numberFontSize: number;
@@ -193,6 +200,7 @@ export class JianpuSVGRender {
       height: config.height ?? 0, // Auto-height by default
       showBarNumbers: config.showBarNumbers ?? false,
       showTempoMarking: config.showTempoMarking ?? false,
+      onNoteClick: config.onNoteClick, // 可选回调，无默认值
     };
 
      // --- Initial Model Creation ---
@@ -206,6 +214,7 @@ export class JianpuSVGRender {
     this.playingNotes = new Map();
     this.noteGroupCache = new Map();
     this.blockGroupCache = new Map();
+    this.noteById = new Map();
     this.lastRenderedQ = -1;
     this.signaturesBlinking = false;
     this.lastKnownScrollLeft = 0;
@@ -267,10 +276,17 @@ export class JianpuSVGRender {
     this.signaturesG = createSVGGroupChild(this.mainG, 'signatures'); // In-line signatures
     this.musicG = createSVGGroupChild(this.mainG, 'music'); // Notes, rests, bars, ties
 
+    // Click delegation for note interaction: a single listener on the SVG root
+    // instead of one per note group. handleNoteClick is a stable arrow-function
+    // reference, so the removeEventListener in destroy() always targets the
+    // same listener instance.
+    this.mainSVG.addEventListener('click', this.handleNoteClick);
+
     // Reset state
     this.playingNotes.clear();
     this.noteGroupCache.clear(); // 重建后旧 SVG 元素全部失效，缓存必须一并清空
     this.blockGroupCache.clear();
+    this.noteById.clear(); // 重建后旧 noteId 映射一并失效，由 drawNotes 重新填充
     this.lastRenderedQ = -1;
     this.signaturesBlinking = false;
     this.lastKnownScrollLeft = 0;
@@ -296,6 +312,10 @@ export class JianpuSVGRender {
   public destroy(): void {
     if (this.destroyed) return; // Already destroyed, nothing left to release
     this.parentElement.removeEventListener('scroll', this.handleScrollEvent); // handleScrollEvent is a stable arrow-function reference
+    // Defensive: the click listener dies together with mainSVG once it is
+    // detached below, but remove it explicitly in case the detached SVG is
+    // ever re-attached externally. Same stable reference as in clear().
+    this.mainSVG.removeEventListener('click', this.handleNoteClick);
     setBlinkAnimation(this.overlayG, false); // Stop the signature blink animation
     while (this.div.lastChild) {
       this.div.removeChild(this.div.lastChild);
@@ -303,6 +323,7 @@ export class JianpuSVGRender {
     this.playingNotes.clear();
     this.noteGroupCache.clear();
     this.blockGroupCache.clear();
+    this.noteById.clear();
     this.destroyed = true;
   }
 
@@ -660,6 +681,7 @@ private drawNotes(
         // Group for individual note allows highlighting and tie linking
         const noteG = createSVGGroupChild(blockGroup, noteId);
         this.noteGroupCache.set(noteId, noteG); // Cache for hot-path lookups
+        this.noteById.set(noteId, note); // noteId → note data, for click delegation
         if (block.isMeasureBeginning()) {
              noteG.setAttribute('data-is-measure-start', 'true'); // Mark for scrolling
         }
@@ -1016,6 +1038,33 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
       }
       return false;
   }
+
+  /**
+   * Click handler using event delegation: instead of one listener per note
+   * group, a single 'click' listener on mainSVG walks from the clicked
+   * element up the parent chain and reports the first element whose data-id
+   * is a known note id (a key of noteById, filled by drawNotes).
+   *
+   * Other elements also carry a data-id — block groups ("block-<start>"),
+   * 'main-content', 'music', 'signatures', 'overlay' — but none of those ids
+   * is ever a note id, so the same lookup filters them out. The walk stops
+   * at mainSVG itself (the listener element, never a note). Clicks that hit
+   * no note (bar lines, signatures, empty space) are silently ignored.
+   */
+  private handleNoteClick = (event: MouseEvent): void => {
+    if (this.destroyed) return; // 已销毁：监听器本应已随 DOM 移除，防御外部复用 mainSVG 的极端情况
+    if (!this.config.onNoteClick) return; // No callback configured: ignore clicks entirely
+    let el = event.target as Element | null;
+    while (el && el !== this.mainSVG) {
+      const noteId = el.getAttribute('data-id');
+      const note = noteId === null ? undefined : this.noteById.get(noteId);
+      if (note) {
+        this.config.onNoteClick(note, el as SVGGElement); // Note groups are always <g data-id>
+        return;
+      }
+      el = el.parentElement;
+    }
+  };
 
   /** Handles scroll events to update the fixed signature overlay */
   private handleScrollEvent = (_event: Event) => {
