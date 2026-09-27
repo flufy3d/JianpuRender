@@ -1,3 +1,21 @@
+# =============================================================================
+# 发布新版本（maintainers / agents 请读这里）
+#
+# 在仓库根目录执行两条命令即可发布：
+#   npm version patch        # 或 minor / major：自动改 package.json 版本号并打 v* tag
+#   git push --follow-tags   # 推送后本 workflow 自动 lint + test + build 并发布到 npm
+#
+# 认证方式：npm Trusted Publishing（OIDC），本仓库不保存任何 NPM_TOKEN secret，
+# 发布凭证由 GitHub Actions 运行时签发，永不过期。
+#
+# 依赖 npmjs.com 包页 Settings 里的配置（改本文件名 / 转移仓库时必须同步更新）：
+#   - Trusted Publisher = GitHub Actions: flufy3d/JianpuRender / publish.yml
+#   - Publishing access = Require 2FA and disallow bypass 2fa tokens
+#
+# 注意：tag 对应的 package.json 版本必须大于 npm 上已发布的最新版本，
+# 否则 publish 会被拒（npm version 流程会自动 bump，正常操作不会遇到）。
+# =============================================================================
+
 name: Publish to npm
 
 on:
@@ -5,8 +23,6 @@ on:
     tags:
       - 'v*'
 
-# OIDC trusted publishing：npmjs.com 上已把本 workflow 配置为 trusted publisher，
-# 无需任何 NPM_TOKEN secret
 permissions:
   id-token: write
   contents: read
