@@ -144,7 +144,11 @@ import {
   
        if (this.lastQ > lastNoteEndTime + 1e-6) { // Add final rest if needed
            const restStart = lastNoteEndTime;
-           const restLength = this.lastQ - restStart;
+           // update() adds a small processing buffer to lastQ, but the score
+           // itself ends at the last note's end. Subtracting the buffer keeps
+           // the final rest from overshooting the real end, which used to
+           // leave a spurious ~1e-6 length rest block in the map.
+           const restLength = this.lastQ - 1e-6 - restStart;
             if (restLength > 1e-6) {
                const restMeasureNum = this.measuresInfo.measureNumberAtQ(restStart);
                const restBlock = new JianpuBlock(restStart, restLength, [], restMeasureNum);
