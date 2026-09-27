@@ -124,6 +124,11 @@ export class JianpuSVGRender {
   private playingNotes: Map<string, NoteInfo>; // Map key: `${start}-${pitch}`
   private lastRenderedQ: number; // Track the last quarter note time rendered
   private estimatedNoteWidth: number; // Estimated width of a basic number for spacing
+  private destroyed: boolean; // 已销毁标志，阻止后续 clear/redraw 操作
+
+  // Hot-path element caches (avoid full-tree querySelector on every highlighted note)
+  private noteGroupCache: Map<string, SVGGElement>; // Key: noteId `${start}-${pitch}`
+  private blockGroupCache: Map<string, SVGGElement>; // Key: `${block.start}`
 
   // Layout & Scaling
   private numberFontSize: number;
@@ -187,10 +192,13 @@ export class JianpuSVGRender {
 
     // --- Initialize State & Layout ---
     this.playingNotes = new Map();
+    this.noteGroupCache = new Map();
+    this.blockGroupCache = new Map();
     this.lastRenderedQ = -1;
     this.signaturesBlinking = false;
     this.lastKnownScrollLeft = 0;
     this.isScrolling = false;
+    this.destroyed = false;
 
     // Calculate scaling and font sizes based on noteHeight
     this.numberFontSize = this.config.noteHeight * FONT_SIZE_MULTIPLIER;
@@ -211,6 +219,7 @@ export class JianpuSVGRender {
    * Clears the SVG elements and resets internal state for a fresh draw.
    */
   public clear() {
+    if (this.destroyed) return; // 已销毁：不重建 SVG 结构，避免复活已释放的资源
     // Empty the container div
     while (this.div.lastChild) {
       this.div.removeChild(this.div.lastChild);
@@ -248,6 +257,8 @@ export class JianpuSVGRender {
 
     // Reset state
     this.playingNotes.clear();
+    this.noteGroupCache.clear(); // 重建后旧 SVG 元素全部失效，缓存必须一并清空
+    this.blockGroupCache.clear();
     this.lastRenderedQ = -1;
     this.signaturesBlinking = false;
     this.lastKnownScrollLeft = 0;
@@ -260,6 +271,26 @@ export class JianpuSVGRender {
     this.currentTimeSignature = this.jianpuModel.measuresInfo.timeSignatureAtQ(0) ?? DEFAULT_TIME_SIGNATURE;
     this.drawSignatures(this.overlayG, 0, true, true); // Draw initial signatures in overlay
     this.updateLayout(); // Set initial sizes
+  }
+
+  /**
+   * Destroys the renderer and releases all resources it holds:
+   * removes the scroll listener from parentElement, stops the overlay blink
+   * animation, empties the container div and drops every cached element
+   * reference. After this call the instance is unusable — clear() and
+   * redraw() become no-ops (returning -1) instead of rebuilding the SVG.
+   */
+  public destroy(): void {
+    if (this.destroyed) return; // Already destroyed, nothing left to release
+    this.parentElement.removeEventListener('scroll', this.handleScrollEvent); // handleScrollEvent is a stable arrow-function reference
+    setBlinkAnimation(this.overlayG, false); // Stop the signature blink animation
+    while (this.div.lastChild) {
+      this.div.removeChild(this.div.lastChild);
+    }
+    this.playingNotes.clear();
+    this.noteGroupCache.clear();
+    this.blockGroupCache.clear();
+    this.destroyed = true;
   }
 
   /** Updates SVG and container dimensions */
@@ -299,6 +330,7 @@ export class JianpuSVGRender {
     activeNote?: NoteInfo,
     scrollIntoView?: boolean
   ): number {
+    if (this.destroyed) return -1; // 已销毁：不绘制任何内容
     let activeNotePosition = -1;
     const isCompact = this.config.pixelsPerTimeStep <= 0;
 
@@ -309,7 +341,7 @@ export class JianpuSVGRender {
         // Deactivate previously playing notes that are not the current one
         this.playingNotes.forEach((_note, id) => { // Changed 'note' to '_note' as it's unused
             if (id !== noteId) {
-                const g = this.mainSVG.querySelector(`g[data-id="${id}"]`) as SVGGElement | null;
+                const g = this.getNoteGroup(id);
                 if (g) {
                     resetElementHighlight(g, this.config.noteColor);
                 }
@@ -319,7 +351,7 @@ export class JianpuSVGRender {
 
         // Activate the current note
         if (!this.playingNotes.has(noteId)) {
-             const g = this.mainSVG.querySelector(`g[data-id="${noteId}"]`) as SVGGElement | null;
+             const g = this.getNoteGroup(noteId);
              if (g) {
                 highlightElement(g, this.config.activeNoteColor);
                 this.playingNotes.set(noteId, activeNote);
@@ -386,7 +418,7 @@ export class JianpuSVGRender {
                 }
 
                 // Track vertical bounds - Use getBBox for SVG coordinate space bounds
-                 const blockG = this.mainSVG.querySelector(`g[data-block-start="${block.start}"]`) as SVGGElement | null; // Use block.start for selector
+                 const blockG = this.getBlockGroup(`${block.start}`); // Use block.start as cache key
                   if (blockG) {
                        try {
                            const blockBox = blockG.getBBox(); // Use getBBox
@@ -416,6 +448,40 @@ export class JianpuSVGRender {
   }
 
   /**
+   * Looks up a note group by id, from the element cache. On a cache miss
+   * falls back to a single querySelector and backfills the cache (guards
+   * against incremental-draw ordering); returns null if still not found.
+   * @param noteId The note id in `${start}-${pitch}` form.
+   */
+  private getNoteGroup(noteId: string): SVGGElement | null {
+      let g = this.noteGroupCache.get(noteId) ?? null;
+      if (!g) {
+          g = this.mainSVG.querySelector(`g[data-id="${noteId}"]`) as SVGGElement | null;
+          if (g) {
+              this.noteGroupCache.set(noteId, g);
+          }
+      }
+      return g;
+  }
+
+  /**
+   * Looks up a block group by its start time, from the element cache. On a
+   * cache miss falls back to a single querySelector and backfills the cache;
+   * returns null if still not found.
+   * @param blockStart The block start time as a string (same form as the data-block-start attribute).
+   */
+  private getBlockGroup(blockStart: string): SVGGElement | null {
+      let g = this.blockGroupCache.get(blockStart) ?? null;
+      if (!g) {
+          g = this.mainSVG.querySelector(`g[data-block-start="${blockStart}"]`) as SVGGElement | null;
+          if (g) {
+              this.blockGroupCache.set(blockStart, g);
+          }
+      }
+      return g;
+  }
+
+  /**
    * Draws a single JianpuBlock (notes or rest) at the specified x-position.
    * @param block The JianpuBlock to draw.
    * @param x The horizontal starting position.
@@ -433,6 +499,7 @@ export class JianpuSVGRender {
        const isMeasureStart = block.isMeasureBeginning();
        const blockGroup = createSVGGroupChild(this.musicG, `block-${block.start}`);
        blockGroup.setAttribute('data-block-start', `${block.start}`); // For later lookup
+       this.blockGroupCache.set(`${block.start}`, blockGroup); // Cache for hot-path lookups
 
        // --- 1. Draw Bar Line (if needed) ---
        // Bar lines are drawn *before* the block they precede.
@@ -551,6 +618,7 @@ private drawNotes(
         const noteId = `${note.start}-${note.pitch}`;
         // Group for individual note allows highlighting and tie linking
         const noteG = createSVGGroupChild(blockGroup, noteId);
+        this.noteGroupCache.set(noteId, noteG); // Cache for hot-path lookups
         if (block.isMeasureBeginning()) {
              noteG.setAttribute('data-is-measure-start', 'true'); // Mark for scrolling
         }

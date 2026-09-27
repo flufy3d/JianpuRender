@@ -1,6 +1,12 @@
 # JianpuRender
 
+[![npm version](https://img.shields.io/npm/v/jianpurender.svg)](https://www.npmjs.com/package/jianpurender)
+[![npm downloads](https://img.shields.io/npm/dm/jianpurender.svg)](https://www.npmjs.com/package/jianpurender)
+[![license](https://img.shields.io/npm/l/jianpurender.svg)](https://www.npmjs.com/package/jianpurender)
+
 专业的浏览器端简谱渲染库，基于TypeScript和SVG技术实现音乐符号精准绘制。支持动态交互与多端适配。
+
+> npm 包主页：https://www.npmjs.com/package/jianpurender
 
 ## 核心功能
 
