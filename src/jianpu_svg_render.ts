@@ -1104,4 +1104,101 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
       return this.jianpuModel.measuresInfo.timeToQuarters(pixels / this.config.pixelsPerTimeStep, 0);
   }
 
+  /**
+   * Exports the current score as a standalone, self-contained SVG string.
+   *
+   * The export is a deep clone of the live `mainSVG` (its width/height
+   * attributes come along with the clone), plus:
+   * - explicit xmlns / xmlns:xlink declarations so the file is valid
+   *   standalone XML even when parsed outside the serializer;
+   * - a white background `<rect>` inserted as the first child (an exported
+   *   SVG is transparent by default, which is unreadable on dark pages);
+   * - unless `includeOverlay` is false, the fixed signature overlay
+   *   (`overlayG`) cloned into a plain `<g>` right after the background rect,
+   *   so the key/time/tempo signatures currently shown by the overlay are
+   *   part of the exported file.
+   *
+   * Overlay alignment (verified against clear()/updateLayout()): overlaySVG
+   * is absolutely positioned at (0, 0) of the container div and mainSVG
+   * starts at (0, 0) of the same div, and neither SVG declares a viewBox, so
+   * both coordinate systems share a single origin with 1 unit = 1 px. The
+   * overlay signatures are drawn starting at x = 0
+   * (drawSignatures(this.overlayG, 0, ...)) — the same left edge the score
+   * content starts at — so the overlayG clone needs no extra translation:
+   * its own transform `translate(0, this.yBaseline)` already reproduces the
+   * on-screen vertical offset (the score itself sits lower still, since
+   * mainG carries `translate(0, yBaseline + verticalPadding)`). Signature
+   * band and score content are therefore vertically disjoint by design,
+   * which is also why placing the overlay clone below the score group in
+   * paint order does not change the visible result.
+   *
+   * Note: the returned string is a snapshot of the *current* DOM. Playback
+   * state — e.g. the active-note highlight color, or the signature blink
+   * animation while it is running — is baked into the export as-is.
+   *
+   * @param includeOverlay Whether to include the fixed signature overlay in
+   *     the export. Defaults to true.
+   * @returns The standalone SVG markup, or an empty string if the renderer
+   *     was already destroy()ed (the SVG structure is gone, nothing to
+   *     serialize).
+   */
+  public toSVGString(includeOverlay = true): string {
+    if (this.destroyed) return ''; // 已销毁：SVG 结构已释放，返回空字符串
+    const exportSVG = this.mainSVG.cloneNode(true) as SVGSVGElement;
+
+    // XMLSerializer normally emits namespace declarations on its own, but set
+    // them explicitly as a safety net for standalone consumption.
+    exportSVG.setAttribute('xmlns', SVGNS);
+    exportSVG.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+    // Defensive: updateLayout() always sets the width/height attributes on
+    // mainSVG and cloneNode copies attributes, but fall back to the current
+    // instance values should the attributes ever be missing.
+    if (!exportSVG.getAttribute('width')) {
+      exportSVG.setAttribute('width', `${this.width}`);
+    }
+    if (!exportSVG.getAttribute('height')) {
+      exportSVG.setAttribute('height', `${this.height}`);
+    }
+
+    // White background first, so it paints below everything else.
+    const background = document.createElementNS(SVGNS, 'rect');
+    background.setAttribute('width', '100%');
+    background.setAttribute('height', '100%');
+    background.setAttribute('fill', 'white');
+    exportSVG.insertBefore(background, exportSVG.firstChild);
+
+    // Overlay clone goes after the background and before the score content
+    // (background.nextSibling is the cloned mainG).
+    if (includeOverlay) {
+      const overlayWrapper = document.createElementNS(SVGNS, 'g');
+      overlayWrapper.appendChild(this.overlayG.cloneNode(true));
+      exportSVG.insertBefore(overlayWrapper, background.nextSibling);
+    }
+
+    return new XMLSerializer().serializeToString(exportSVG);
+  }
+
+  /**
+   * Exports the current score via {@link toSVGString} and triggers a browser
+   * download of it as an .svg file. Does nothing after destroy().
+   * @param filename Suggested file name for the download. Defaults to
+   *     'jianpu-score.svg'.
+   */
+  public downloadSVG(filename = 'jianpu-score.svg'): void {
+    if (this.destroyed) return; // 已销毁：无内容可下载
+    const svgString = this.toSVGString();
+    if (!svgString) return; // Defensive: nothing to write
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none'; // 隐藏的 <a download>，仅用于触发下载
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
 }
