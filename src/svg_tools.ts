@@ -57,6 +57,7 @@
   * @param dominantBaseline Vertical alignment ('middle', 'hanging', 'central', 'mathematical', 'text-bottom', 'text-top')
   * @param fill Text color
   * @param opacity Opacity (0 to 1)
+  * @param fontFamily Font family (e.g., 'sans-serif', '"Times New Roman", serif'). Defaults to 'sans-serif'.
   * @returns The drawn SVG text element
   */
  export function drawSVGText(
@@ -65,10 +66,11 @@
    textAnchor: 'start' | 'middle' | 'end' = 'middle',
    dominantBaseline: string = 'middle', // Use string for broader SVG values
    fill = 'currentColor', // Default to inheriting color
-   opacity = 1
+   opacity = 1,
+   fontFamily = 'sans-serif'
  ): SVGTextElement { // Return SVGTextElement specifically
    const child = document.createElementNS(SVGNS, 'text');
-   child.setAttributeNS(null, 'font-family', 'sans-serif'); // Simple default
+   child.setAttributeNS(null, 'font-family', fontFamily);
    child.setAttributeNS(null, 'font-size', fontSize);
    child.setAttributeNS(null, 'font-weight', fontWeight);
    child.setAttributeNS(null, 'x', `${x}`);
@@ -172,7 +174,8 @@ export function setBlinkAnimation(
  }
  
  /**
-  * Highlights an element by changing its fill color.
+  * Highlights an element by changing its fill color, and its stroke color
+  * for elements that have a stroke (e.g. duration underlines, dashes, bar lines).
   * Often used for active notes.
   * @param e The SVG element (typically a group containing note parts)
   * @param color The highlight color
@@ -191,11 +194,16 @@ export function setBlinkAnimation(
     toHighlight.push(el);
   });
 
-  // Apply the fill color
+  // Apply the fill color, and the stroke color for stroked elements
   toHighlight.forEach(child => {
     // Skip elements with fill="none"
     if (child.getAttribute('fill') !== 'none') {
       child.setAttribute('fill', color);
+    }
+    // Also highlight elements colored via stroke (underlines, dashes, ties, bar lines)
+    const stroke = child.getAttribute('stroke');
+    if (stroke !== null && stroke !== 'none') {
+      child.setAttribute('stroke', color);
     }
   });
 
@@ -204,7 +212,7 @@ export function setBlinkAnimation(
 
  
  /**
-  * Resets the highlight of an element, reverting to a default color.
+  * Resets the highlight of an element, reverting fill and stroke to a default color.
   * @param e The SVG element (typically a group)
   * @param defaultColor The color to revert to
   */
@@ -213,6 +221,11 @@ export function setBlinkAnimation(
       children.forEach((child: SVGElement) => {
           if (child.getAttribute('fill') !== 'none') {
               child.setAttribute('fill', defaultColor);
+          }
+          // Restore stroked elements (underlines, dashes, ties, bar lines) as well
+          const stroke = child.getAttribute('stroke');
+          if (stroke !== null && stroke !== 'none') {
+              child.setAttribute('stroke', defaultColor);
           }
       });
 }

@@ -562,7 +562,7 @@ private drawNotes(
         if (note.accidental !== 0) {
             const accText = ACCIDENTAL_TEXT[note.accidental];
             // Position accidental slightly before the number
-            drawSVGText(noteG, accText, noteStartX + noteSpacing, 0, SMALL_FONT_SIZE, 'normal', 'end', 'text-top', this.config.noteColor);
+            drawSVGText(noteG, accText, noteStartX + noteSpacing, 0, SMALL_FONT_SIZE, 'normal', 'end', 'text-top', this.config.noteColor, 1, this.config.fontFamily);
             // We don't advance noteStartX here, accidental sits to the left
             // We do need its width to potentially adjust overall block spacing later if needed.
             //let accWidth = acc.getBBox().width;
@@ -595,7 +595,7 @@ private drawNotes(
         } else {
 
             const numText = `${note.jianpuNumber}`;
-            const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
+            const num = drawSVGText(noteG, numText, noteStartX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor, 1, this.config.fontFamily);
             noteWidth = num.getBBox().width;
             noteEndX = noteStartX + noteWidth; // Number defines the main body width for now
           
@@ -725,7 +725,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
 
     // --- Rest Symbol ('0') ---
     const restSymbol = '0';
-    const restText = drawSVGText(blockGroup, restSymbol, currentX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor);
+    const restText = drawSVGText(blockGroup, restSymbol, currentX, 0, FONT_SIZE, 'normal', 'start', 'middle', this.config.noteColor, 1, this.config.fontFamily);
     const restWidth = restText.getBBox().width;
     noteEndX = currentX + restWidth;
 
@@ -783,7 +783,7 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
        if (drawKey) {
            const keyName = PITCH_CLASS_NAMES[this.currentKey % 12] ?? 'C';
            const keyText = `1=${keyName}`;
-           const keySig = drawSVGText(container, keyText, currentX, 0, keyFontSize, 'normal', 'start', 'middle', this.config.noteColor);
+           const keySig = drawSVGText(container, keyText, currentX, 0, keyFontSize, 'normal', 'start', 'middle', this.config.noteColor, 1, this.config.fontFamily);
            currentX += keySig.getBBox().width + spacing * 2; // More space after key sig
        }
 
@@ -791,15 +791,17 @@ private drawRest(block: JianpuBlock, x: number, blockGroup: SVGGElement): number
        if (drawTime) {
             const timeStr = `${this.currentTimeSignature.numerator}/${this.currentTimeSignature.denominator}`;
             const timeSig = drawSVGText(
-                container, 
-                timeStr, 
-                currentX, 
+                container,
+                timeStr,
+                currentX,
                 0,  // 保持与基线对齐
-                timeFontSize, 
-                'normal', 
-                'start', 
+                timeFontSize,
+                'normal',
+                'start',
                 'middle',  // 垂直居中
-                this.config.noteColor
+                this.config.noteColor,
+                1,
+                this.config.fontFamily
             );
             currentX += timeSig.getBBox().width + spacing;
        }
